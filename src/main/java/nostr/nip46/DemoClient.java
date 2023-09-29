@@ -19,5 +19,8 @@ public class DemoClient {
 
         log.info("Connecting to the signer...");
         service.connect();
+
+        log.info("Describe...");
+        service.describe();
     }
 }
