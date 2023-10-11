@@ -1,4 +1,4 @@
-package nostr.nip46.app.provider;
+package nostr.si4n6r.shibboleth.provider;
 
 import lombok.extern.java.Log;
 import nostr.api.NIP04;
@@ -6,9 +6,8 @@ import nostr.api.NIP46;
 import nostr.base.Relay;
 import nostr.event.impl.GenericEvent;
 import nostr.event.json.codec.GenericEventDecoder;
-import nostr.nip46.app.AppService;
-import nostr.nip46.app.Application;
-import nostr.nip46.app.NostrUser;
+import nostr.si4n6r.shibboleth.AppService;
+import nostr.si4n6r.shibboleth.Application;
 import nostr.si4n6r.util.Util;
 import nostr.util.NostrException;
 import nostr.ws.handler.command.spi.ICommandHandler;
@@ -44,7 +43,7 @@ public class AppCommandHandler implements ICommandHandler {
         var event = decodeEvent(jsonEvent);
         log.log(Level.INFO, "App: Decoded event: {0}", event);
         var recipient = Util.getEventRecipient(event);
-        var app = Application.getInstance(NostrUser.DUMMY_USER);
+        var app = Application.getInstance();
 
         // TODO - Also make sure the public key is the signer's pubkey, and ignore all other pubkeys
         if (event.getKind() == 24133 && recipient.equals(app.getPublicKey())) {
@@ -52,7 +51,7 @@ public class AppCommandHandler implements ICommandHandler {
 
             String content = null;
             try {
-                content = NIP04.decrypt(event);
+                content = NIP04.decrypt(app.getAppIdentity(), event);
             } catch (NostrException e) {
                 throw new RuntimeException(e);
             }

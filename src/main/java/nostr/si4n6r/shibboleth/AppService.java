@@ -1,4 +1,4 @@
-package nostr.nip46.app;
+package nostr.si4n6r.shibboleth;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,7 +10,7 @@ import nostr.api.Nostr;
 import nostr.base.PublicKey;
 import nostr.event.list.KindList;
 import nostr.event.list.PublicKeyList;
-import nostr.si4n6r.core.IMethod;
+import nostr.event.tag.PubKeyTag;
 import nostr.si4n6r.core.IParameter;
 import nostr.si4n6r.core.Request;
 import nostr.si4n6r.core.Response;
@@ -25,14 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static nostr.api.NIP46.createRequestEvent;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_CONNECT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_DELEGATE;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_DESCRIBE;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_GET_PUBLIC_KEY;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_GET_RELAYS;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_NIP04_DECRYPT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_NIP04_ENCRYPT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_SIGN_EVENT;
+import static nostr.si4n6r.core.IMethod.Constants.*;
 
 @Data
 @AllArgsConstructor
@@ -63,15 +56,24 @@ public class AppService {
         }
 
         switch (response.getMethod()) {
-            case METHOD_SIGN_EVENT -> {}
-            case METHOD_CONNECT -> {}
-            case METHOD_DELEGATE -> {}
-            case METHOD_DESCRIBE -> {}
-            case METHOD_GET_PUBLIC_KEY -> {}
-            case METHOD_GET_RELAYS -> {}
-            case METHOD_NIP04_DECRYPT -> {}
-            case METHOD_NIP04_ENCRYPT -> {}
-            default -> {}
+            case METHOD_SIGN_EVENT -> {
+            }
+            case METHOD_CONNECT -> {
+            }
+            case METHOD_DELEGATE -> {
+            }
+            case METHOD_DESCRIBE -> {
+            }
+            case METHOD_GET_PUBLIC_KEY -> {
+            }
+            case METHOD_GET_RELAYS -> {
+            }
+            case METHOD_NIP04_DECRYPT -> {
+            }
+            case METHOD_NIP04_ENCRYPT -> {
+            }
+            default -> {
+            }
         }
     }
 
@@ -84,6 +86,15 @@ public class AppService {
         var connect = new Connect(this.application.getPublicKey());
         var request = new Request(connect, application.getPublicKey());
         submit(request);
+    }
+
+    public static void connect(@NonNull String connectURI, @NonNull PublicKey signer) {
+        var nostrConnectURI = NostrConnectURI.fromString(connectURI);
+        var application = Application.getInstance();
+        application.setUser(nostrConnectURI.getPublicKey());
+        var appService = AppService.getInstance(application, signer);
+
+        appService.connect();
     }
 
     public void disconnect() {
@@ -105,7 +116,7 @@ public class AppService {
             authors.add(signer);
 
             var filters = NIP01.createFilters(null, authors, kinds, null, null, null, null, null, null);
-            Nostr.send(filters, "shibboleth_" + signer.toString() + "_" + Thread.currentThread().getName());
+            Nostr.send(filters, "shibboleth_" + signer + "_" + Thread.currentThread().getName());
         });
 
         try {
@@ -123,7 +134,10 @@ public class AppService {
         var req = new NIP46Request(request.getId(), method, params);
 
         // Create a request for the signer
-        var event = createRequestEvent(application.getAppIdentity(), req, signer);
+        var event = createRequestEvent(req, application.getAppIdentity(), signer);
+
+        // Add the user pubkey
+        event.addTag(PubKeyTag.builder().publicKey(this.application.getPublicKey()).build());
 
         log.log(Level.INFO, "Event request for the signer: {0}", event);
 
