@@ -1,2 +1,2 @@
 # shibboleth
-Nostr Signer App
+Nostr library for a NIP-46 compliant App
