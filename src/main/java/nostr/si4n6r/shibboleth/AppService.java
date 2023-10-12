@@ -51,6 +51,9 @@ public class AppService {
     }
 
     public void handle(@NonNull Response response) {
+
+        log.log(Level.INFO, "Handling response {0}", response);
+
         if (!responses.contains(response)) {
             responses.add(response);
         }
@@ -83,12 +86,18 @@ public class AppService {
     }
 
     public void connect() {
+
+        log.log(Level.INFO, "Connecting App...");
+
         var connect = new Connect(this.application.getPublicKey());
         var request = new Request(connect, application.getPublicKey());
         submit(request);
     }
 
     public static void connect(@NonNull String connectURI, @NonNull PublicKey signer) {
+
+        log.log(Level.INFO, "Connecting App with URI {0}", connectURI);
+
         var nostrConnectURI = NostrConnectURI.fromString(connectURI);
         var application = Application.getInstance();
         application.setUser(nostrConnectURI.getPublicKey());
@@ -98,6 +107,9 @@ public class AppService {
     }
 
     public void disconnect() {
+
+        log.log(Level.INFO, "Disonnecting App...");
+
         var request = new Request(new Disconnect(), application.getPublicKey());
         submit(request);
     }
@@ -106,8 +118,6 @@ public class AppService {
 
         var executor = Executors.newSingleThreadExecutor();
         executor.submit(() -> {
-
-            log.log(Level.INFO, "Running the filter from within {0}", Thread.currentThread().getName());
 
             var kinds = new KindList();
             kinds.add(24133);
@@ -123,12 +133,16 @@ public class AppService {
             executor.shutdown();
             executor.awaitTermination(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         } finally {
             executor.shutdownNow();
         }
     }
 
     private void submit(@NonNull Request request) {
+
+        log.log(Level.INFO, "Submitting request {0}", request);
+
         var params = getParams(request);
         var method = request.getMethod().getName();
         var req = new NIP46Request(request.getId(), method, params);
@@ -139,7 +153,7 @@ public class AppService {
         // Add the user pubkey
         event.addTag(PubKeyTag.builder().publicKey(this.application.getPublicKey()).build());
 
-        log.log(Level.INFO, "Event request for the signer: {0}", event);
+        log.log(Level.FINE, "Event request for the signer: {0}", event);
 
         Nostr.sign(event);
         Nostr.send(event);

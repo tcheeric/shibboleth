@@ -48,11 +48,7 @@ public class NostrConnectURI {
         var jsonMetadata = getJsonMetadata();
         sb.append(jsonMetadata);
 
-        try {
-            return URLEncoder.encode(sb.toString(), StandardCharsets.UTF_8.toString());
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return URLEncoder.encode(sb.toString(), StandardCharsets.UTF_8);
     }
 
     // nostrconnect://b889ff5b1513b641e2a139f661a661364979c5beee91842f8f0ef42ab558e9d4
@@ -66,7 +62,7 @@ public class NostrConnectURI {
 
         try {
             // Remove the protocol part and decode the URI
-            String decodedUri = URLDecoder.decode(uri.substring(NOSTR_CONNECT_PROTOCOL.length() + 3), StandardCharsets.UTF_8.toString());
+            String decodedUri = URLDecoder.decode(uri.substring(NOSTR_CONNECT_PROTOCOL.length() + 3), StandardCharsets.UTF_8);
 
             // Parse the URI components
             URI uriComponents = new URI(decodedUri);
@@ -81,21 +77,19 @@ public class NostrConnectURI {
             });
 
             return new NostrConnectURI(publicKey, relay, metadata);
-        } catch (URISyntaxException | UnsupportedEncodingException | JsonProcessingException e) {
+        } catch (URISyntaxException | JsonProcessingException e) {
             throw new IllegalArgumentException("Invalid NostrConnectURI format", e);
         }
     }
 
     private static Relay getRelay(@NonNull String relayUri) {
-        Relay relay = null;
-        if (relayUri != null) {
-            if (relayUri.startsWith(Relay.PROTOCOL_WSS)) {
-                relay = new Relay(relayUri.substring(Relay.PROTOCOL_WSS.length() + 3));
-            } else if (relayUri.startsWith(Relay.PROTOCOL_WS)) {
-                relay = new Relay(Relay.PROTOCOL_WS, relayUri.substring(Relay.PROTOCOL_WS.length() + 3));
-            } else {
-                throw new RuntimeException("Invalid relay protocol");
-            }
+        Relay relay;
+        if (relayUri.startsWith(Relay.PROTOCOL_WSS)) {
+            relay = new Relay(relayUri.substring(Relay.PROTOCOL_WSS.length() + 3));
+        } else if (relayUri.startsWith(Relay.PROTOCOL_WS)) {
+            relay = new Relay(Relay.PROTOCOL_WS, relayUri.substring(Relay.PROTOCOL_WS.length() + 3));
+        } else {
+            throw new RuntimeException("Invalid relay protocol");
         }
         return relay;
     }
