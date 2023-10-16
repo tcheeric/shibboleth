@@ -35,11 +35,12 @@ public class AppService {
     private final Application application;
     private final PublicKey signer;
     private final List<Response> responses;
+    private String sessionId;
 
     private static AppService instance;
 
     private AppService(@NonNull Application app, @NonNull PublicKey signer) {
-        this(app, signer, new ArrayList<>());
+        this(app, signer, new ArrayList<>(), null);
         filter();
     }
 
@@ -57,6 +58,9 @@ public class AppService {
         if (!responses.contains(response)) {
             responses.add(response);
         }
+
+        // Update the session id
+        this.sessionId = response.getSessionId();
 
         switch (response.getMethod()) {
             case METHOD_SIGN_EVENT -> {
@@ -82,6 +86,7 @@ public class AppService {
 
     public void describe() {
         var request = new Request(new Describe(), application.getPublicKey());
+        request.setSessionId(sessionId);
         submit(request);
     }
 
@@ -91,6 +96,7 @@ public class AppService {
 
         var connect = new Connect(this.application.getPublicKey());
         var request = new Request(connect, application.getPublicKey());
+        request.setSessionId(sessionId);
         submit(request);
     }
 
@@ -108,9 +114,10 @@ public class AppService {
 
     public void disconnect() {
 
-        log.log(Level.INFO, "Disonnecting App...");
+        log.log(Level.INFO, "Disconnecting App...");
 
         var request = new Request(new Disconnect(), application.getPublicKey());
+        request.setSessionId(sessionId);
         submit(request);
     }
 
@@ -145,7 +152,7 @@ public class AppService {
 
         var params = getParams(request);
         var method = request.getMethod().getName();
-        var req = new NIP46Request(request.getId(), method, params);
+        var req = new NIP46Request(request.getId(), method, params, request.getSessionId());
 
         // Create a request for the signer
         var event = createRequestEvent(req, application.getAppIdentity(), signer);

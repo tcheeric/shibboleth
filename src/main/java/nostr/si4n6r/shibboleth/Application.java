@@ -8,9 +8,9 @@ import nostr.crypto.schnorr.Schnorr;
 import nostr.id.IIdentity;
 import nostr.id.Identity;
 import nostr.id.IdentityHelper;
+import nostr.si4n6r.core.ConnectionManager;
 import nostr.util.NostrException;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,7 +22,7 @@ public class Application implements IIdentity {
     private final Relay relay;
     private final Map<String, Object> metadata;
 
-    private ConnectionContext connectionContext;
+    private ConnectionManager connectionManager;
 
     private static Application instance;
 
@@ -32,7 +32,7 @@ public class Application implements IIdentity {
         this.appIdentity = Identity.getInstance(PrivateKey.generateRandomPrivKey());
         this.relay = Client.getInstance().getDefaultRelay();
         this.metadata = new HashMap<>();
-        this.connectionContext = null;
+        this.connectionManager = ConnectionManager.getInstance();
     }
 
     public static Application getInstance() {
@@ -64,30 +64,19 @@ public class Application implements IIdentity {
         }
     }
 
-    public void connect(ConnectionContext context) {
-        this.setConnectionContext(context);
+    public void connect() {
+        this.connectionManager.addConnection(user);
     }
 
     public void disconnect() {
-        this.connect(null);
+        this.connectionManager.removeConnection(user);
     }
 
     public boolean isConnected() {
-        return this.connectionContext != null;
+        return this.connectionManager.isConnected(user);
     }
 
     public boolean isDisconnected() {
-        return !isConnected();
-    }
-
-    @Data
-    public static class ConnectionContext {
-        private Date date;
-        private PublicKey signer;
-
-        public ConnectionContext(@NonNull PublicKey publicKey) {
-            this.date = new Date();
-            this.signer = publicKey;
-        }
+        return this.connectionManager.isDisconnected(user);
     }
 }

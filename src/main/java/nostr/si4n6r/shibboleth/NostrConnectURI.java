@@ -51,9 +51,6 @@ public class NostrConnectURI {
         return URLEncoder.encode(sb.toString(), StandardCharsets.UTF_8);
     }
 
-    // nostrconnect://b889ff5b1513b641e2a139f661a661364979c5beee91842f8f0ef42ab558e9d4
-    // ?relay=wss%3A%2F%2Frelay.damus.io
-    // &metadata=%7B%22name%22%3A%22Example%22%7D
     public static NostrConnectURI fromString(@NonNull String uri) {
 
         if (!uri.startsWith(NOSTR_CONNECT_PROTOCOL + "://")) {
@@ -84,7 +81,9 @@ public class NostrConnectURI {
 
     private static Relay getRelay(@NonNull String relayUri) {
         Relay relay;
-        if (relayUri.startsWith(Relay.PROTOCOL_WSS)) {
+        if (relayUri.isEmpty()) {
+            throw new RuntimeException("Invalid relay protocol");
+        } else if (relayUri.startsWith(Relay.PROTOCOL_WSS)) {
             relay = new Relay(relayUri.substring(Relay.PROTOCOL_WSS.length() + 3));
         } else if (relayUri.startsWith(Relay.PROTOCOL_WS)) {
             relay = new Relay(Relay.PROTOCOL_WS, relayUri.substring(Relay.PROTOCOL_WS.length() + 3));
