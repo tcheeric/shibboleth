@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Data
-public class Application implements IIdentity {
+public class Application {
 
     private PublicKey user;
     private final Identity appIdentity;
@@ -42,7 +42,6 @@ public class Application implements IIdentity {
         return instance;
     }
 
-    @Override
     public PrivateKey getPrivateKey() {
         return this.appIdentity.getPrivateKey();
     }
@@ -53,30 +52,5 @@ public class Application implements IIdentity {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public Signature sign(@NonNull ISignable signable) {
-        try {
-            return new IdentityHelper(this).sign(signable);
-        } catch (NostrException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void connect() {
-        this.connectionManager.addConnection(user);
-    }
-
-    public void disconnect() {
-        this.connectionManager.removeConnection(user);
-    }
-
-    public boolean isConnected() {
-        return this.connectionManager.isConnected(user);
-    }
-
-    public boolean isDisconnected() {
-        return this.connectionManager.isDisconnected(user);
     }
 }

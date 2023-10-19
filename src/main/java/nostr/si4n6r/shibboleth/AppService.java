@@ -57,6 +57,7 @@ public class AppService {
 
         if (!responses.contains(response)) {
             responses.add(response);
+            //  TODO - Should return?
         }
 
         // Update the session id

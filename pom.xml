@@ -39,7 +39,23 @@
             <artifactId>nostr-java-event</artifactId>
             <version>0.3-SNAPSHOT</version>
         </dependency>
+
+        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
+
     <build>
         <pluginManagement>
             <plugins>
@@ -84,6 +100,10 @@
         <maven.compiler.source>19</maven.compiler.source>
         <maven.compiler.target>19</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Test Dependency Versions -->
+        <junit.version>5.10.0</junit.version>
+        <assertj.version>3.23.1</assertj.version>
     </properties>
 
 </project>

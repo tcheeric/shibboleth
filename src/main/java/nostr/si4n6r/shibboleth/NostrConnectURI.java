@@ -17,6 +17,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Data
 @AllArgsConstructor
@@ -62,7 +64,7 @@ public class NostrConnectURI {
             String decodedUri = URLDecoder.decode(uri.substring(NOSTR_CONNECT_PROTOCOL.length() + 3), StandardCharsets.UTF_8);
 
             // Parse the URI components
-            URI uriComponents = new URI(decodedUri);
+            URI uriComponents = new URI(uri);
             String publicKeyStr = uriComponents.getHost();
             Map<String, String> queryParams = parseQueryParameters(uriComponents.getQuery());
 
@@ -83,14 +85,23 @@ public class NostrConnectURI {
         Relay relay;
         if (relayUri.isEmpty()) {
             throw new RuntimeException("Invalid relay protocol");
-        } else if (relayUri.startsWith(Relay.PROTOCOL_WSS)) {
-            relay = new Relay(relayUri.substring(Relay.PROTOCOL_WSS.length() + 3));
-        } else if (relayUri.startsWith(Relay.PROTOCOL_WS)) {
-            relay = new Relay(Relay.PROTOCOL_WS, relayUri.substring(Relay.PROTOCOL_WS.length() + 3));
         } else {
-            throw new RuntimeException("Invalid relay protocol");
+            Pattern pattern = Pattern.compile("^(wss|ws)://([^:/]+)(?::(\\d+))?$");
+            Matcher matcher = pattern.matcher(relayUri);
+            if(matcher.matches()) {
+                var scheme = matcher.group(1);
+                var host = matcher.group(2);
+                var port = matcher.group(3);
+                relay = new Relay(scheme, host, port == null ? getDefaultPort(scheme) : Integer.parseInt(port));
+            } else {
+                throw new RuntimeException("Invalid relay protocol");
+            }
         }
         return relay;
+    }
+
+    private static int getDefaultPort(@NonNull String scheme) {
+        return scheme.equals(Relay.PROTOCOL_WSS) ? 443 : scheme.equals(Relay.PROTOCOL_WS) ? 80 : -1;
     }
 
     private static Map<String, String> parseQueryParameters(String query) {
