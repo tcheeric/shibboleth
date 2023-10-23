@@ -12,11 +12,12 @@ import nostr.event.list.KindList;
 import nostr.event.list.PublicKeyList;
 import nostr.event.tag.PubKeyTag;
 import nostr.si4n6r.core.IParameter;
-import nostr.si4n6r.core.Request;
-import nostr.si4n6r.core.Response;
-import nostr.si4n6r.core.impl.Connect;
-import nostr.si4n6r.core.impl.Describe;
-import nostr.si4n6r.core.impl.Disconnect;
+import nostr.si4n6r.core.impl.Request;
+import nostr.si4n6r.core.impl.Response;
+import nostr.si4n6r.core.impl.methods.Connect;
+import nostr.si4n6r.core.impl.methods.Describe;
+import nostr.si4n6r.core.impl.methods.Disconnect;
+import nostr.si4n6r.core.impl.methods.GetPublicKey;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +58,9 @@ public class AppService {
 
         if (!responses.contains(response)) {
             responses.add(response);
-            //  TODO - Should return?
+        } else {
+            log.log(Level.WARNING, "Response {0} already handled", response);
+            return;
         }
 
         // Update the session id
@@ -67,10 +70,27 @@ public class AppService {
             case METHOD_SIGN_EVENT -> {
             }
             case METHOD_CONNECT -> {
+                if (response.getResult().equals("ACK")) {
+                    log.log(Level.INFO, "Connected");
+                } else {
+                    log.log(Level.SEVERE, "Connection failed: {0}", response.getError());
+                }
+            }
+            case METHOD_DISCONNECT -> {
+                if (response.getResult().equals("ACK")) {
+                    log.log(Level.INFO, "Disconnected");
+                } else {
+                    log.log(Level.SEVERE, "Disconnection failed: {0}", response.getError());
+                }
             }
             case METHOD_DELEGATE -> {
             }
             case METHOD_DESCRIBE -> {
+                if (response.getResult().equals("ACK")) {
+                    log.log(Level.INFO, "Describe: {0}", printList(response.getResult()));
+                } else {
+                    log.log(Level.SEVERE, "Described failed: {0}", response.getError());
+                }
             }
             case METHOD_GET_PUBLIC_KEY -> {
             }
@@ -83,6 +103,13 @@ public class AppService {
             default -> {
             }
         }
+    }
+
+    private String printList(Object result) {
+        var list = (List<String>) result;
+        var sb = new StringBuilder();
+        list.forEach(s -> sb.append(s).append(", "));
+        return sb.toString();
     }
 
     public void describe() {
@@ -114,13 +141,38 @@ public class AppService {
     }
 
     public void disconnect() {
-
         log.log(Level.INFO, "Disconnecting App...");
 
         var request = new Request(new Disconnect(), application.getPublicKey());
         request.setSessionId(sessionId);
         submit(request);
     }
+
+    public void getPublicKey() {
+        log.log(Level.INFO, "Getting public key...");
+
+        var request = new Request(new GetPublicKey(), application.getPublicKey());
+        request.setSessionId(sessionId);
+        submit(request);
+    }
+
+/*
+    public void signEvent(@NonNull IEvent event) {
+        log.log(Level.INFO, "Signing event...");
+
+        var request = new Request(new SignEvent(event), application.getPublicKey());
+        request.setSessionId(sessionId);
+        submit(request);
+    }
+
+    public void nip04£ncrypt(@NonNull String plaintext) {
+        log.log(Level.INFO, "Encrypting {0}...", plaintext);
+
+        var request = new Request(new NIP04Encrypt(plaintext), application.getPublicKey());
+        request.setSessionId(sessionId);
+        submit(request);
+    }
+*/
 
     private void filter() {
 
@@ -159,6 +211,7 @@ public class AppService {
         var event = createRequestEvent(req, application.getAppIdentity(), signer);
 
         // Add the user pubkey
+        // TODO - Is this still necessary?
         event.addTag(PubKeyTag.builder().publicKey(this.application.getPublicKey()).build());
 
         log.log(Level.FINE, "Event request for the signer: {0}", event);

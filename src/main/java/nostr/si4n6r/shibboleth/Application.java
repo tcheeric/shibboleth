@@ -1,15 +1,12 @@
 package nostr.si4n6r.shibboleth;
 
 import lombok.Data;
-import lombok.NonNull;
-import nostr.base.*;
+import nostr.base.PrivateKey;
+import nostr.base.PublicKey;
+import nostr.base.Relay;
 import nostr.client.Client;
 import nostr.crypto.schnorr.Schnorr;
-import nostr.id.IIdentity;
 import nostr.id.Identity;
-import nostr.id.IdentityHelper;
-import nostr.si4n6r.core.ConnectionManager;
-import nostr.util.NostrException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,8 +19,6 @@ public class Application {
     private final Relay relay;
     private final Map<String, Object> metadata;
 
-    private ConnectionManager connectionManager;
-
     private static Application instance;
 
     private Application() {
@@ -32,7 +27,6 @@ public class Application {
         this.appIdentity = Identity.getInstance(PrivateKey.generateRandomPrivKey());
         this.relay = Client.getInstance().getDefaultRelay();
         this.metadata = new HashMap<>();
-        this.connectionManager = ConnectionManager.getInstance();
     }
 
     public static Application getInstance() {
