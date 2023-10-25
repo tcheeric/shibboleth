@@ -35,13 +35,14 @@ public class AppService {
 
     private final Application application;
     private final PublicKey signer;
+    private final List<Request> requests;
     private final List<Response> responses;
     private String sessionId;
 
     private static AppService instance;
 
     private AppService(@NonNull Application app, @NonNull PublicKey signer) {
-        this(app, signer, new ArrayList<>(), null);
+        this(app, signer, new ArrayList<>(), new ArrayList<>(), null);
         filter();
     }
 
@@ -55,6 +56,7 @@ public class AppService {
     public void handle(@NonNull Response response) {
 
         log.log(Level.INFO, "Handling response {0}", response);
+
 
         if (!responses.contains(response)) {
             responses.add(response);
@@ -74,6 +76,7 @@ public class AppService {
                     log.log(Level.INFO, "Connected");
                 } else {
                     log.log(Level.SEVERE, "Connection failed: {0}", response.getError());
+                    // TODO - Throw an exception?
                 }
             }
             case METHOD_DISCONNECT -> {
@@ -81,6 +84,7 @@ public class AppService {
                     log.log(Level.INFO, "Disconnected");
                 } else {
                     log.log(Level.SEVERE, "Disconnection failed: {0}", response.getError());
+                    // TODO - Throw an exception?
                 }
             }
             case METHOD_DELEGATE -> {
@@ -90,6 +94,7 @@ public class AppService {
                     log.log(Level.INFO, "Describe: {0}", printList(response.getResult()));
                 } else {
                     log.log(Level.SEVERE, "Described failed: {0}", response.getError());
+                    // TODO - Throw an exception?
                 }
             }
             case METHOD_GET_PUBLIC_KEY -> {
@@ -106,14 +111,17 @@ public class AppService {
     }
 
     private String printList(Object result) {
-        var list = (List<String>) result;
-        var sb = new StringBuilder();
-        list.forEach(s -> sb.append(s).append(", "));
-        return sb.toString();
+        if (result instanceof List) {
+            var list = (List<String>) result;
+            var sb = new StringBuilder();
+            list.forEach(s -> sb.append(s).append(", "));
+            return sb.toString();
+        }
+        return null;
     }
 
     public void describe() {
-        var request = new Request(new Describe(), application.getPublicKey());
+        var request = new Request<>(new Describe(), application.getPublicKey());
         request.setSessionId(sessionId);
         submit(request);
     }
@@ -123,7 +131,7 @@ public class AppService {
         log.log(Level.INFO, "Connecting App...");
 
         var connect = new Connect(this.application.getPublicKey());
-        var request = new Request(connect, application.getPublicKey());
+        var request = new Request<>(connect, application.getPublicKey());
         request.setSessionId(sessionId);
         submit(request);
     }
@@ -143,7 +151,7 @@ public class AppService {
     public void disconnect() {
         log.log(Level.INFO, "Disconnecting App...");
 
-        var request = new Request(new Disconnect(), application.getPublicKey());
+        var request = new Request<>(new Disconnect(), application.getPublicKey());
         request.setSessionId(sessionId);
         submit(request);
     }
@@ -151,7 +159,7 @@ public class AppService {
     public void getPublicKey() {
         log.log(Level.INFO, "Getting public key...");
 
-        var request = new Request(new GetPublicKey(), application.getPublicKey());
+        var request = new Request<>(new GetPublicKey(), application.getPublicKey());
         request.setSessionId(sessionId);
         submit(request);
     }
@@ -175,33 +183,39 @@ public class AppService {
 */
 
     private void filter() {
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                var kinds = new KindList();
+                kinds.add(24133);
 
-        var executor = Executors.newSingleThreadExecutor();
-        executor.submit(() -> {
+                var authors = new PublicKeyList();
+                authors.add(signer);
 
-            var kinds = new KindList();
-            kinds.add(24133);
+                var filters = NIP01.createFilters(null, authors, kinds, null, null, null, null, null, null);
+                Nostr.send(filters, "shibboleth_" + signer + "_" + Thread.currentThread().getName());
+            });
 
-            var authors = new PublicKeyList();
-            authors.add(signer);
-
-            var filters = NIP01.createFilters(null, authors, kinds, null, null, null, null, null, null);
-            Nostr.send(filters, "shibboleth_" + signer + "_" + Thread.currentThread().getName());
-        });
-
-        try {
-            executor.shutdown();
-            executor.awaitTermination(10, TimeUnit.SECONDS);
+            // Set a reasonable timeout
+            if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                // Handle the case when the task doesn't finish in time
+                log.log(Level.WARNING, "Task didn't finish in 10 seconds.");
+            }
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } finally {
-            executor.shutdownNow();
+            // Handle or log the exception gracefully
+            log.log(Level.SEVERE, "Thread was interrupted: {0}", e.getMessage());
         }
     }
 
     private void submit(@NonNull Request request) {
 
         log.log(Level.INFO, "Submitting request {0}", request);
+
+        if (this.requests.contains(request)) {
+            log.log(Level.WARNING, "Request {0} already submitted", request);
+            return;
+        } else {
+            this.requests.add(request);
+        }
 
         var params = getParams(request);
         var method = request.getMethod().getName();

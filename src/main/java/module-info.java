@@ -1,4 +1,5 @@
 import nostr.si4n6r.shibboleth.provider.AppCommandHandler;
+import nostr.ws.handler.command.spi.ICommandHandler;
 
 module shibboleth {
 
@@ -18,9 +19,10 @@ module shibboleth {
 
     requires si4n6r.core;
     requires si4n6r.util;
+    requires si4n6r.signer;
 
     exports nostr.si4n6r.shibboleth;
     exports nostr.si4n6r.shibboleth.provider;
 
-    provides nostr.ws.handler.command.spi.ICommandHandler with AppCommandHandler;
+    provides ICommandHandler with AppCommandHandler;
 }

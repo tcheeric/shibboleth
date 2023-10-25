@@ -11,7 +11,7 @@
     <dependencies>
         <dependency>
             <groupId>nostr.si4n6r</groupId>
-            <artifactId>si4n6r-core</artifactId>
+            <artifactId>si4n6r-signer</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
@@ -51,12 +51,6 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>${assertj.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>nostr.si4n6r</groupId>
-            <artifactId>si4n6r-signer</artifactId>
-            <version>1.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

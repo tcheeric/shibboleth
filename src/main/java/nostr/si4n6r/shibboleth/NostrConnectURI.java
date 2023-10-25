@@ -9,7 +9,6 @@ import lombok.NonNull;
 import nostr.base.PublicKey;
 import nostr.base.Relay;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
