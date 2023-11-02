@@ -14,10 +14,10 @@ import nostr.event.tag.PubKeyTag;
 import nostr.si4n6r.core.IParameter;
 import nostr.si4n6r.core.impl.Request;
 import nostr.si4n6r.core.impl.Response;
-import nostr.si4n6r.core.impl.methods.Connect;
-import nostr.si4n6r.core.impl.methods.Describe;
-import nostr.si4n6r.core.impl.methods.Disconnect;
-import nostr.si4n6r.core.impl.methods.GetPublicKey;
+import nostr.si4n6r.signer.methods.Connect;
+import nostr.si4n6r.signer.methods.Describe;
+import nostr.si4n6r.signer.methods.Disconnect;
+import nostr.si4n6r.signer.methods.GetPublicKey;
 
 import java.util.ArrayList;
 import java.util.List;

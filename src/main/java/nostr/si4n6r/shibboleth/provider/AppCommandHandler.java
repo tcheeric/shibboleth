@@ -1,9 +1,11 @@
 package nostr.si4n6r.shibboleth.provider;
 
+import lombok.NonNull;
 import lombok.extern.java.Log;
 import nostr.api.NIP04;
 import nostr.api.NIP46;
 import nostr.base.Relay;
+import nostr.si4n6r.core.impl.Response;
 import nostr.si4n6r.shibboleth.AppService;
 import nostr.si4n6r.shibboleth.Application;
 import nostr.si4n6r.util.Util;
@@ -13,7 +15,6 @@ import nostr.ws.handler.command.spi.ICommandHandler;
 import java.util.logging.Level;
 
 import static nostr.api.Nostr.Json.decodeEvent;
-import static nostr.si4n6r.util.Util.toResponse;
 
 
 @Log
@@ -74,4 +75,11 @@ public class AppCommandHandler implements ICommandHandler {
         log.log(Level.FINER, "onAuth({0}, {1})", new Object[]{challenge, relay});
         // TODO
     }
+
+    private static Response toResponse(@NonNull NIP46.NIP46Response nip46Response) {
+        Response response = new Response(nip46Response.getId(), nip46Response.getMethod(), nip46Response.getResult());
+        response.setError(nip46Response.getError());
+        return response;
+    }
+
 }

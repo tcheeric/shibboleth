@@ -3,11 +3,12 @@ package nostr.si4n6r.shibboleth;
 import nostr.id.Identity;
 import nostr.si4n6r.core.IMethod;
 import nostr.si4n6r.core.impl.Request;
+import nostr.si4n6r.core.impl.SecurityManager;
 import nostr.si4n6r.core.impl.SessionManager;
-import nostr.si4n6r.core.impl.methods.Connect;
-import nostr.si4n6r.core.impl.methods.Describe;
-import nostr.si4n6r.core.impl.methods.Disconnect;
 import nostr.si4n6r.signer.SignerService;
+import nostr.si4n6r.signer.methods.Connect;
+import nostr.si4n6r.signer.methods.Describe;
+import nostr.si4n6r.signer.methods.Disconnect;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ public class ApplicationServiceTest {
 
     @Test
     @DisplayName("Test a connect response")
-    public void handleConnect() {
+    public void handleConnect() throws SecurityManager.SecurityManagerException {
         var app = this.appService.getApplication().getPublicKey();
         var request = new Request<>(new Connect(app), app);
         this.signerService.handle(request);
@@ -58,7 +59,7 @@ public class ApplicationServiceTest {
 
     @Test
     @DisplayName("Test a disconnect response")
-    public void handleDisconnect() {
+    public void handleDisconnect() throws SecurityManager.SecurityManagerException {
         var app = this.appService.getApplication().getPublicKey();
 
         var request = new Request<>(new Connect(app), app);
@@ -83,7 +84,7 @@ public class ApplicationServiceTest {
 
     @Test
     @DisplayName("Test a describe response")
-    public void describe() {
+    public void describe() throws SecurityManager.SecurityManagerException {
         var app = this.appService.getApplication().getPublicKey();
 
         var connectReq = new Request<>(new Connect(app), app);
