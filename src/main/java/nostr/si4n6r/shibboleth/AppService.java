@@ -63,7 +63,7 @@ public class AppService {
         if (!responses.contains(response)) {
             responses.add(response);
         } else {
-            log.log(Level.WARNING, "Response {0} already handled", response);
+            log.log(Level.WARNING, "Response {0} already handled. Ignoring...", response);
             return;
         }
 
@@ -76,17 +76,21 @@ public class AppService {
             case METHOD_CONNECT -> {
                 if (response.getResult().equals("ACK")) {
                     log.log(Level.INFO, "Connected");
-                } else {
+                } else if (null != response.getError()) {
                     log.log(Level.SEVERE, "Connection failed: {0}", response.getError());
                     // TODO - Throw an exception?
+                } else {
+                    
                 }
             }
             case METHOD_DISCONNECT -> {
                 if (response.getResult().equals("ACK")) {
                     log.log(Level.INFO, "Disconnected");
-                } else {
+                } else if (null != response.getError()) {
                     log.log(Level.SEVERE, "Disconnection failed: {0}", response.getError());
                     // TODO - Throw an exception?
+                } else {
+                    
                 }
             }
             case METHOD_DELEGATE -> {
@@ -94,8 +98,10 @@ public class AppService {
             case METHOD_DESCRIBE -> {
                 if (response.getResult() instanceof List) {
                     log.log(Level.INFO, "Describe: {0}", printList(response.getResult()));
-                } else {
+                } else if (null != response.getError()) {
                     log.log(Level.SEVERE, "Describe failed: {0}", response.getError());
+                    // TODO - Throw an exception?
+                } else {
                     // TODO - Throw an exception?
                 }
             }
@@ -110,16 +116,6 @@ public class AppService {
             default -> {
             }
         }
-    }
-
-    private String printList(Object result) {
-        if (result instanceof List) {
-            var list = (List<String>) result;
-            var sb = new StringBuilder();
-            list.forEach(s -> sb.append(s).append(", "));
-            return sb.toString();
-        }
-        return null;
     }
 
     public void describe() {
@@ -255,4 +251,13 @@ public class AppService {
         return proxy;
     }
 
+    private static String printList(Object result) {
+        if (result instanceof List) {
+            var list = (List<String>) result;
+            var sb = new StringBuilder();
+            list.forEach(s -> sb.append(s).append(", "));
+            return sb.toString();
+        }
+        return null;
+    }
 }
