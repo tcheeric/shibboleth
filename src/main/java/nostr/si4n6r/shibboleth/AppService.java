@@ -3,7 +3,6 @@ package nostr.si4n6r.shibboleth;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
-import lombok.extern.java.Log;
 import nostr.api.NIP01;
 import nostr.api.NIP46.NIP46Request;
 import nostr.api.Nostr;
@@ -21,12 +20,15 @@ import nostr.si4n6r.signer.methods.GetPublicKey;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import lombok.extern.java.Log;
 
 import static nostr.api.NIP46.createRequestEvent;
 import static nostr.si4n6r.core.IMethod.Constants.*;
+import nostr.si4n6r.core.impl.ApplicationProxy;
 
 @Data
 @AllArgsConstructor
@@ -90,10 +92,10 @@ public class AppService {
             case METHOD_DELEGATE -> {
             }
             case METHOD_DESCRIBE -> {
-                if (response.getResult().equals("ACK")) {
+                if (response.getResult() instanceof List) {
                     log.log(Level.INFO, "Describe: {0}", printList(response.getResult()));
                 } else {
-                    log.log(Level.SEVERE, "Described failed: {0}", response.getError());
+                    log.log(Level.SEVERE, "Describe failed: {0}", response.getError());
                     // TODO - Throw an exception?
                 }
             }
@@ -121,7 +123,7 @@ public class AppService {
     }
 
     public void describe() {
-        var request = new Request<>(new Describe(), application.getPublicKey());
+        var request = new Request<>(new Describe(), toApplicationProxy(application));
         request.setSessionId(sessionId);
         submit(request);
     }
@@ -131,7 +133,7 @@ public class AppService {
         log.log(Level.INFO, "Connecting App...");
 
         var connect = new Connect(this.application.getPublicKey());
-        var request = new Request<>(connect, application.getPublicKey());
+        var request = new Request<>(connect, toApplicationProxy(application));
         request.setSessionId(sessionId);
         submit(request);
     }
@@ -151,7 +153,7 @@ public class AppService {
     public void disconnect() {
         log.log(Level.INFO, "Disconnecting App...");
 
-        var request = new Request<>(new Disconnect(), application.getPublicKey());
+        var request = new Request<>(new Disconnect(), toApplicationProxy(application));
         request.setSessionId(sessionId);
         submit(request);
     }
@@ -159,7 +161,7 @@ public class AppService {
     public void getPublicKey() {
         log.log(Level.INFO, "Getting public key...");
 
-        var request = new Request<>(new GetPublicKey(), application.getPublicKey());
+        var request = new Request<>(new GetPublicKey(), toApplicationProxy(application));
         request.setSessionId(sessionId);
         submit(request);
     }
@@ -239,6 +241,18 @@ public class AppService {
 
         request.getMethod().getParams().forEach(p -> params.add(((IParameter) p).get().toString()));
         return params;
+    }
+    
+    public static ApplicationProxy toApplicationProxy(@NonNull Application application) {
+        ApplicationProxy proxy = new ApplicationProxy();
+        final Map<String, Object> metadata = application.getMetadata();
+        proxy.setDescription(metadata.get("description").toString());
+        proxy.setName(metadata.get("name").toString());
+        proxy.setIcons((List<String>) metadata.get("icons"));
+        proxy.setId((Long) metadata.get("id"));
+        proxy.setUrl(metadata.get("url").toString());
+        proxy.setPublicKey(metadata.get("publicKey").toString());
+        return proxy;
     }
 
 }
