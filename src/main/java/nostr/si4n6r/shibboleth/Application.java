@@ -47,4 +47,8 @@ public class Application {
             throw new RuntimeException(e);
         }
     }
+    
+    public void addMetadata(String key, Object value) {
+        this.metadata.put(key, value);
+    }
 }
