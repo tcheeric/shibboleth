@@ -240,14 +240,17 @@ public class AppService {
     }
     
     public static ApplicationProxy toApplicationProxy(@NonNull Application application) {
-        ApplicationProxy proxy = new ApplicationProxy();
+        ApplicationProxy proxy = new ApplicationProxy(application.getPublicKey());
         final Map<String, Object> metadata = application.getMetadata();
-        proxy.setDescription(metadata.get("description").toString());
         proxy.setName(metadata.get("name").toString());
-        proxy.setIcons((List<String>) metadata.get("icons"));
-        proxy.setId((Long) metadata.get("id"));
-        proxy.setUrl(metadata.get("url").toString());
-        proxy.setPublicKey(metadata.get("publicKey").toString());
+        proxy.setId(System.currentTimeMillis());
+
+        var template = proxy.getTemplate();
+        template.setDescription(metadata.get("description").toString());
+        template.setName(metadata.get("name").toString());
+        template.setIcons((List<String>) metadata.get("icons"));
+        template.setUrl(metadata.get("url").toString());
+
         return proxy;
     }
 

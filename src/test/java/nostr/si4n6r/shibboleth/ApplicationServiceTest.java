@@ -172,13 +172,14 @@ public class ApplicationServiceTest {
 
     private void createApplication() {
         PublicKey app = this.appService.getApplication().getPublicKey();
-        applicationProxy = new ApplicationProxy();
-        applicationProxy.setPublicKey(app.toString());
+        applicationProxy = new ApplicationProxy(app.toString());
         applicationProxy.setId(System.currentTimeMillis());
         applicationProxy.setName("shibboleth");
-        applicationProxy.setUrl("https://nostr.com");
-        applicationProxy.setDescription("A nip-46 compliant nostr application");
-        applicationProxy.setIcons(List.of("https://nostr.com/favicon.ico", "https://nostr.com/favicon.png"));
+
+        var template = applicationProxy.getTemplate();
+        template.setUrl("https://nostr.com");
+        template.setDescription("A nip-46 compliant nostr application");
+        template.setIcons(List.of("https://nostr.com/favicon.ico", "https://nostr.com/favicon.png"));
     }
 
     private void createAccount(@NonNull ApplicationProxy application) {

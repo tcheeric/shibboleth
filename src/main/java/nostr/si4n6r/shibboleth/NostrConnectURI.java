@@ -33,7 +33,7 @@ public class NostrConnectURI {
 
     @Override
     public String toString() {
-        var sb = new StringBuffer(NOSTR_CONNECT_PROTOCOL).append("://");
+        var sb = new StringBuilder(NOSTR_CONNECT_PROTOCOL).append("://");
         sb.append(publicKey);
 
         if (relay != null) {
