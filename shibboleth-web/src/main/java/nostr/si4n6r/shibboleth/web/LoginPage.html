@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+<head>
+    <meta charset="utf-8"/>
+    <title>Apache Wicket Quickstart</title>
+    <link href='https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz:regular,bold' rel='stylesheet'
+          type='text/css'/>
+    <link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet"/>
+</head>
+<body>
+<div id="hd">
+    <div id="logo">
+        <img src="logo.png" width="50px" height="50px" alt="Wicket Logo"/>
+        <h1>Cyclops</h1>
+    </div>
+</div>
+<div id="bd">
+    <h2>Login</h2>
+    <p>
+        Please enter your username and password.
+    </p>
+    <form id="loginForm" method="get" wicket:id="loginForm">
+        <fieldset>
+            <legend style="color: #F90">Login</legend>
+            <p wicket:id="loginStatus"></p>
+            <span>Username:</span>
+            <input wicket:id="username" type="text" id="username"/>
+            <br/>
+            <span>Password:</span>
+            <input wicket:id="password" type="password" id="password"/>
+            <p>
+                <input type="submit" name="Login" value="Login"/>
+            </p>
+
+        </fieldset>
+    </form>
+</div>
+<div id="ft">
+</div>
+</body>
+</html>

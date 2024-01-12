@@ -1,0 +1,6 @@
+{
+  "name": "Cyclops",
+  "description": "Cyclops is a web application for creating and securing nostr identities.",
+  "icons" : ["https://cdn.dribbble.com/userupload/7431564/file/original-7346d4f14012f88de54f2bce1756af53.png"],
+  "url" : "https://welcome.onboard.network"
+}
