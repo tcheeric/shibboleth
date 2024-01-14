@@ -6,6 +6,7 @@ import nostr.base.PublicKey;
 import nostr.base.Relay;
 import nostr.client.Client;
 import nostr.crypto.schnorr.Schnorr;
+import nostr.id.IIdentity;
 import nostr.id.Identity;
 
 import java.util.HashMap;
@@ -15,16 +16,20 @@ import java.util.Map;
 public class Application {
 
     private PublicKey user;
-    private final Identity appIdentity;
+    private final IIdentity appIdentity;
     private final Relay relay;
     private final Map<String, Object> metadata;
 
     private static Application instance;
 
     private Application() {
-
-        // TODO - introduce a configuration.
         this.appIdentity = Identity.getInstance(PrivateKey.generateRandomPrivKey());
+        this.relay = Client.getInstance().getDefaultRelay();
+        this.metadata = new HashMap<>();
+    }
+
+    private Application(IIdentity identity) {
+        this.appIdentity = identity;
         this.relay = Client.getInstance().getDefaultRelay();
         this.metadata = new HashMap<>();
     }
@@ -32,6 +37,13 @@ public class Application {
     public static Application getInstance() {
         if (instance == null) {
             instance = new Application();
+        }
+        return instance;
+    }
+
+    public static Application getInstance(IIdentity identity) {
+        if (instance == null) {
+            instance = new Application(identity);
         }
         return instance;
     }

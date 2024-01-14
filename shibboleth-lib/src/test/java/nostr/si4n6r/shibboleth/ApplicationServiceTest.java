@@ -12,6 +12,7 @@ import nostr.si4n6r.signer.methods.Disconnect;
 import nostr.si4n6r.storage.Vault;
 import nostr.si4n6r.core.impl.AccountProxy;
 import nostr.si4n6r.core.impl.ApplicationProxy;
+import nostr.si4n6r.storage.fs.NostrAccountFSVault;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -53,7 +54,7 @@ public class ApplicationServiceTest {
         createApplication();
         createAccount(this.applicationProxy);
 
-        this.accountVault = getAccountVault();
+        this.accountVault = getAccountVault("password");
         this.appVault = getApplicationVault();
 
         this.appVault.store(applicationProxy);
@@ -191,8 +192,10 @@ public class ApplicationServiceTest {
         accountProxy.setApplication(application);
     }
 
-    private static Vault<AccountProxy> getAccountVault() {
-        return getVault(VAULT_ACTOR_ACCOUNT);
+    private static Vault<AccountProxy> getAccountVault(@NonNull String password) {
+        var vault = getVault(VAULT_ACTOR_ACCOUNT);
+        ((NostrAccountFSVault)vault).setPassword(password);
+        return vault;
     }
 
     private static Vault<ApplicationProxy> getApplicationVault() {
