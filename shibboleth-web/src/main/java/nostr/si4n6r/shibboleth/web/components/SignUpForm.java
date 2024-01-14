@@ -117,9 +117,7 @@ public class SignUpForm extends Form {
                     .queryParam("appPubKey", appPubKey)
                     .toUriString();
 
-            String response = sendPostRequest(urlWithParams);
-
-            return response;
+            return sendPostRequest(urlWithParams);
         } catch (Exception e) {
             log.log(Level.SEVERE, "Error registering identity: " + npub, e);
             throw new RuntimeException(e);
