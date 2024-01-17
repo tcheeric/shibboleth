@@ -5,7 +5,6 @@ import nostr.base.PrivateKey;
 import nostr.base.PublicKey;
 import nostr.base.Relay;
 import nostr.client.Client;
-import nostr.crypto.schnorr.Schnorr;
 import nostr.id.IIdentity;
 import nostr.id.Identity;
 
@@ -54,7 +53,7 @@ public class Application {
 
     public PublicKey getPublicKey() {
         try {
-            return new PublicKey(Schnorr.genPubKey(getPrivateKey().getRawData()));
+            return this.appIdentity.getPublicKey();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -3,11 +3,14 @@ package nostr.si4n6r.shibboleth.web.components;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.java.Log;
+import nostr.api.NIP04;
+import nostr.api.Nostr;
 import nostr.base.PublicKey;
+import nostr.id.CustomIdentity;
 import nostr.si4n6r.ApplicationConfiguration;
-import nostr.si4n6r.core.impl.Principal;
-import nostr.si4n6r.core.impl.SecurityManager;
+import nostr.si4n6r.CustomWebSession;
 import nostr.si4n6r.core.impl.SessionManager;
+import nostr.si4n6r.util.EncryptionUtil;
 import org.apache.wicket.Session;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
@@ -17,12 +20,15 @@ import org.apache.wicket.model.Model;
 import org.apache.wicket.validation.validator.StringValidator;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -30,8 +36,11 @@ import java.util.logging.Level;
 public class LoginForm extends Form {
 
     private static final String NIP05_URL = ApplicationConfiguration.getInstance().getNip05Url();
+    private static final String TOKEN_ALGO_SECRET = ApplicationConfiguration.getInstance().getTokenAlgoSecret();
+    private static final Integer TOKEN_EXPIRATION = ApplicationConfiguration.getInstance().getTokenExpiration();
 
     private TextField usernameField;
+    private TextField appField;
     private PasswordTextField passwordField;
     private Label loginStatus;
 
@@ -39,16 +48,21 @@ public class LoginForm extends Form {
         super(id);
 
         usernameField = new TextField("username", Model.of(""));
+        appField = new TextField("app", Model.of(""));
         passwordField = new PasswordTextField("password", Model.of(""));
         loginStatus = new Label("loginStatus", Model.of(""));
 
         add(usernameField);
+        add(appField);
         add(passwordField);
         add(loginStatus);
 
         // Add input validation
         usernameField.setRequired(true);
         passwordField.setRequired(true);
+        appField.setRequired(true);
+
+        appField.setVisible(false);
 
         usernameField.add(StringValidator.minimumLength(1));
         passwordField.add(StringValidator.minimumLength(8));
@@ -57,6 +71,7 @@ public class LoginForm extends Form {
     public final void onSubmit() {
         String username = (String) usernameField.getDefaultModelObject();
         String password = (String) passwordField.getDefaultModelObject();
+        String secret = getTokenPassword();
 
         var publicKey = getPublicKey(username);
 
@@ -66,34 +81,34 @@ public class LoginForm extends Form {
         }
 
         log.log(Level.FINE, "Logging in with {0} and {1}...", new Object[]{username, password});
-        var principal = Principal.getInstance(publicKey, password);
-
         try {
-            principal.decryptNsec();
+            EncryptionUtil.decryptNsec(publicKey, secret);
             loginStatus.setDefaultModelObject("Logged in!");
-            createSession(principal);
+            createSession(publicKey, password);
         } catch (Exception e) {
             loginStatus.setDefaultModelObject("Wrong username/password combination!");
         }
     }
 
-    private void createSession(Principal principal) {
-        SessionManager sessionManager = SessionManager.getInstance();
+    private void createSession(@NonNull PublicKey npub, @NonNull String password) {
+        var sessionManager = SessionManager.getInstance();
         log.log(Level.FINE, "Creating session...");
-        try {
-            log.log(Level.FINE, "Adding principal to security manager...");
-            SecurityManager.getInstance().addPrincipal(principal);
 
-            var npub = principal.getNpub();
-            log.log(Level.FINE, "Creating a session for npub: {0}", npub);
-            sessionManager.createSession(npub);
+        // Create session
+        log.log(Level.FINE, "Creating a session for npub: {0}", npub);
+        sessionManager.createSession(npub, new PublicKey(appField.getDefaultModelObject().toString()), TOKEN_EXPIRATION * 60, password);
 
-            log.log(Level.FINE, "Adding npub to wicket session...");
-            Session session = Session.get();
-            session.setAttribute("npub", npub.toString());
-        } catch (SecurityManager.SecurityManagerException e) {
-            throw new RuntimeException(e);
-        }
+        log.log(Level.FINER, "Adding npub to web application session...");
+        var session = (CustomWebSession) Session.get();
+        var jwtToken = sessionManager.getSession(npub).getJwtToken();
+        session.setAttribute("si4n6r-token", jwtToken);
+        session.setSessionTimeout(TOKEN_EXPIRATION);
+
+        // Send token to the app through relay
+        var signer = new CustomIdentity("signer");
+        var nip04Event = NIP04.createDirectMessageEvent(signer, new PublicKey(appField.getDefaultModelObject().toString()), jwtToken);
+        Nostr.sign(nip04Event);
+        Nostr.send(nip04Event);
     }
 
     private PublicKey getPublicKey(@NonNull String username) {
@@ -139,5 +154,18 @@ public class LoginForm extends Form {
         String publicKeyString = namesObject.get(localpart);
 
         return new PublicKey(publicKeyString);
+    }
+
+    private String getTokenPassword() {
+        var filePath = System.getProperty("user.home") + "/.si4n6r/" + TOKEN_ALGO_SECRET;
+        try {
+            return readFileContent(filePath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String readFileContent(@NonNull String filePath) throws IOException {
+        return new String(Files.readAllBytes(Paths.get(filePath)));
     }
 }
