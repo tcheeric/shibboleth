@@ -63,6 +63,14 @@ public class ApplicationConfiguration {
         return "http://" + server + ":" + port + "/nip05";
     }
 
+    public String getTokenAlgoSecret() {
+        return getProperty("token.secret");
+    }
+
+    public int getTokenExpiration() {
+        return Integer.parseInt(getProperty("token.expiration"));
+    }
+
     private String getProperty(String key) {
         return properties.getProperty(key);
     }

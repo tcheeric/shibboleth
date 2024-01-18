@@ -1,37 +1,31 @@
 package nostr.si4n6r.shibboleth;
 
+import lombok.NonNull;
 import nostr.id.Identity;
+import nostr.si4n6r.core.impl.AccountProxy;
+import nostr.si4n6r.core.impl.ApplicationProxy;
 import nostr.si4n6r.core.impl.Request;
+import nostr.si4n6r.core.impl.Session;
 import nostr.si4n6r.core.impl.SessionManager;
-import nostr.si4n6r.core.impl.SecurityManager;
-import nostr.si4n6r.core.impl.SecurityManager.SecurityManagerException;
 import nostr.si4n6r.signer.SignerService;
 import nostr.si4n6r.signer.methods.Connect;
 import nostr.si4n6r.signer.methods.Describe;
 import nostr.si4n6r.signer.methods.Disconnect;
 import nostr.si4n6r.storage.Vault;
-import nostr.si4n6r.core.impl.AccountProxy;
-import nostr.si4n6r.core.impl.ApplicationProxy;
 import nostr.si4n6r.storage.fs.NostrAccountFSVault;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import java.util.List;
 import java.util.ServiceLoader;
-import lombok.NonNull;
-import nostr.base.PublicKey;
 
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_CONNECT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_DESCRIBE;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_DISCONNECT;
-import nostr.si4n6r.core.impl.Principal;
-import org.junit.jupiter.api.AfterEach;
-import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
+import static nostr.si4n6r.core.IMethod.Constants.*;
 import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_ACCOUNT;
 import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_APPLICATION;
+import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ApplicationServiceTest {
@@ -43,42 +37,38 @@ public class ApplicationServiceTest {
     private AccountProxy accountProxy;
     private ApplicationProxy applicationProxy;
 
-    @BeforeAll
-    public void init() {
-        System.out.println("init");
-        this.signerService = SignerService.getInstance();
-        var app = Application.getInstance();
-        var signer = Identity.generateRandomIdentity().getPublicKey();
-        this.appService = AppService.getInstance(app, signer);
+    private static final String PASSWORD = "password";
 
-        createApplication();
-        createAccount(this.applicationProxy);
-
-        this.accountVault = getAccountVault("password");
-        this.appVault = getApplicationVault();
-
-        this.appVault.store(applicationProxy);
-
-        final var appPublicKey = new PublicKey(applicationProxy.getPublicKey());
-        final var principal = Principal.getInstance(appPublicKey, "password");
-        SecurityManager.getInstance().addPrincipal(principal);
-
-        this.accountVault.store(accountProxy);
-    }
+    private Session session;
 
     @BeforeEach
-    public void setUp() {
-        System.out.println("setUp");
+    public void init() {
+        System.out.println("init");
+
+        this.signerService = SignerService.getInstance();
+        var application = Application.getInstance();
+        var signer = Identity.generateRandomIdentity().getPublicKey();
+        this.appService = AppService.getInstance(application, signer);
+        final var appPublicKey = appService.getApplication().getPublicKey();
+        this.session = SessionManager.getInstance().createSession(Identity.generateRandomIdentity().getPublicKey(), appPublicKey, 20*60, PASSWORD);
+        this.appService.setJwtToken(session.getJwtToken());
+
+        createAppProxy();
+        createAccountProxy(this.applicationProxy);
+
+        this.accountVault = getAccountVault(PASSWORD);
+        this.appVault = getApplicationVault();
+        this.appVault.store(applicationProxy);
+        this.accountVault.store(accountProxy);
     }
 
     @Test
     @DisplayName("Test a connect response")
-    public void handleConnect() throws SecurityManagerException {
+    public void handleConnect() {
         System.out.println("handleConnect");
+
         var app = this.appService.getApplication().getPublicKey();
-
-        var request = new Request<>(new Connect(app), applicationProxy);
-
+        var request = new Request<>(new Connect(app), applicationProxy, session.getId());
         this.signerService.handle(request);
 
         var responses = SessionManager.getInstance().getSession(app).getResponses();
@@ -99,46 +89,41 @@ public class ApplicationServiceTest {
 
     @Test
     @DisplayName("Test a disconnect response")
-    public void handleDisconnect() throws SecurityManagerException {
+    public void handleDisconnect() {
         System.out.println("handleDisconnect");
+
         var app = this.appService.getApplication().getPublicKey();
-
-        SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password"));
-
-        var request = new Request<>(new Connect(app), applicationProxy);
+        var request = new Request<>(new Connect(app), applicationProxy, session.getId());
         this.signerService.handle(request);
 
         var responses = SessionManager.getInstance().getSession(app).getResponses();
         var response = responses.stream().filter(r -> r.getMethod().equals(METHOD_CONNECT)).findFirst().orElse(null);
 
-        request = new Request<>(new Disconnect(), applicationProxy);
-        request.setSessionId(response.getSessionId());
+        request = new Request<>(new Disconnect(), applicationProxy, session.getId());
         this.signerService.handle(request);
-
         response = responses.stream().filter(r -> r.getMethod().equals(METHOD_DISCONNECT)).findFirst().orElse(null);
+
         assertNotNull(response);
-        assertEquals("ACK", response.getResult());
 
         this.appService.handle(response);
         assertEquals(appService.getSessionId(), response.getSessionId());
         assertEquals(request.getSessionId(), response.getSessionId());
+        assertEquals("ACK", response.getResult());
     }
 
     @Test
     @DisplayName("Test a describe response")
-    public void describe() throws SecurityManagerException {
+    public void describe() {
         System.out.println("describe");
         var app = this.appService.getApplication().getPublicKey();
 
-        SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password"));
-
-        var connectReq = new Request<>(new Connect(app), applicationProxy);
+        var connectReq = new Request<>(new Connect(app), applicationProxy, session.getId());
         this.signerService.handle(connectReq);
 
         var responses = SessionManager.getInstance().getSession(app).getResponses();
         var response = responses.stream().filter(r -> r.getMethod().equals(METHOD_CONNECT)).findFirst().orElse(null);
 
-        var describeReq = new Request<List<String>, ApplicationProxy>(new Describe(), applicationProxy);
+        var describeReq = new Request<>(new Describe(), applicationProxy, session.getId());
         describeReq.setSessionId(response.getSessionId());
         this.signerService.handle(describeReq);
 
@@ -160,22 +145,13 @@ public class ApplicationServiceTest {
     @DisplayName("Test invalid Principal Password")
     public void invalidPrincipalPassword() {
         System.out.println("invalidPrincipalPassword");
-        var app = this.appService.getApplication().getPublicKey();
-
-        var addFlag = SecurityManager.getInstance().hasPrincipal(app, "password");
-        assertTrue(addFlag);
-
-        // TODO - Validate the password separately, by decrypting the nsec.
-//        SecurityManager.getInstance().removePrincipal(app);
-//        addFlag = SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password1"));
-//        assertFalse(addFlag);
     }
 
-    private void createApplication() {
-        PublicKey app = this.appService.getApplication().getPublicKey();
-        applicationProxy = new ApplicationProxy(app.toString());
-        applicationProxy.setId(System.currentTimeMillis());
-        applicationProxy.setName("shibboleth");
+    private void createAppProxy() {
+        var app = this.appService.getApplication().getPublicKey();
+        this.applicationProxy = new ApplicationProxy(app.toString());
+        this.applicationProxy.setId(System.currentTimeMillis());
+        this.applicationProxy.setName("shibboleth");
 
         var template = applicationProxy.getTemplate();
         template.setUrl("https://nostr.com");
@@ -183,7 +159,7 @@ public class ApplicationServiceTest {
         template.setIcons(List.of("https://nostr.com/favicon.ico", "https://nostr.com/favicon.png"));
     }
 
-    private void createAccount(@NonNull ApplicationProxy application) {
+    private void createAccountProxy(@NonNull ApplicationProxy application) {
         var identity = Identity.generateRandomIdentity();
         accountProxy = new AccountProxy();
         accountProxy.setPublicKey(identity.getPublicKey().toString());
@@ -217,9 +193,9 @@ public class ApplicationServiceTest {
         System.out.println("cleanUp");
         this.signerService.getSessionManager().getSessions().stream().forEach(s -> s.getRequests().clear());
         this.signerService.getSessionManager().getSessions().stream().forEach(s -> s.getResponses().clear());
-        this.signerService.getSessionManager().getSessions().clear();        
+        this.signerService.getSessionManager().getSessions().clear();
         this.appService.getRequests().clear();
-        this.appService.getResponses().clear();        
+        this.appService.getResponses().clear();
     }
 
 }

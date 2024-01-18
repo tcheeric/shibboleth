@@ -56,7 +56,6 @@ public class SignUpForm extends Form {
         passwordField.add(StringValidator.minimumLength(8));
     }
 
-    @SuppressWarnings("CallToPrintStackTrace")
     public final void onSubmit() {
         log.log(Level.INFO, "Signing up...");
 

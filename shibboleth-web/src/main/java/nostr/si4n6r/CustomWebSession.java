@@ -1,5 +1,6 @@
 package nostr.si4n6r;
 
+import jakarta.servlet.http.HttpSession;
 import nostr.base.PublicKey;
 import nostr.si4n6r.core.impl.SessionManager;
 import org.apache.wicket.protocol.http.WebSession;
@@ -19,7 +20,14 @@ public class CustomWebSession extends WebSession {
         if (npub == null) {
             return;
         }
-        SessionManager sessionManager = SessionManager.getInstance();
-        sessionManager.invalidate(new PublicKey(npub.toString()));
+        var sessionManager = SessionManager.getInstance();
+        sessionManager.deactivateSession(new PublicKey(npub.toString()));
+    }
+
+    public void setSessionTimeout(int timeoutInMinutes) {
+        HttpSession httpSession = (HttpSession) getAttribute("session");
+        if (httpSession != null) {
+            httpSession.setMaxInactiveInterval(timeoutInMinutes * 60);
+        }
     }
 }
