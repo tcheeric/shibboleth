@@ -12,7 +12,7 @@ import org.apache.wicket.request.Response;
 /**
  * Application object for your web application.
  * If you want to run this application without deploying, run the Start class.
- * 
+ *
  */
 public class WicketApplication extends WebApplication
 {
@@ -29,19 +29,22 @@ public class WicketApplication extends WebApplication
 	 * @see org.apache.wicket.Application#init()
 	 */
 	@Override
-	public void init()
-	{
+	public void init() {
 		super.init();
 
-		// needed for the styling used by the quickstart
-		getCspSettings().blocking()
-			.add(CSPDirective.STYLE_SRC, CSPDirectiveSrcValue.SELF)
-			.add(CSPDirective.STYLE_SRC, "https://fonts.googleapis.com/css")
-			.add(CSPDirective.FONT_SRC, "https://fonts.gstatic.com");
+		// Update the CSP settings
+		getCspSettings().blocking().clear()
+				.add(CSPDirective.STYLE_SRC, CSPDirectiveSrcValue.SELF)
+				.add(CSPDirective.STYLE_SRC, "https://fonts.googleapis.com/css")
+				.add(CSPDirective.STYLE_SRC, "http://localhost:7070")
+				.add(CSPDirective.FONT_SRC, "https://fonts.gstatic.com")
+				.add(CSPDirective.SCRIPT_SRC, CSPDirectiveSrcValue.SELF)
+				.add(CSPDirective.SCRIPT_SRC, "http://localhost:7070")
+				.isNonceEnabled();
+
 
 		// add your configuration here
 	}
-
 	@Override
 	public Session newSession(Request request, Response response) {
 		return new CustomWebSession(request);

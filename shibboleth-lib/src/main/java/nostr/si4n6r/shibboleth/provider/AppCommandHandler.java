@@ -15,6 +15,11 @@ import nostr.si4n6r.util.Util;
 import nostr.util.NostrException;
 import nostr.ws.handler.command.spi.ICommandHandler;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.logging.Level;
 
 import static nostr.api.Nostr.Json.decodeEvent;
@@ -43,10 +48,10 @@ public class AppCommandHandler implements ICommandHandler {
     @Override
     public void onEvent(String jsonEvent, String subId, Relay relay) {
 
-        log.log(Level.FINE, "Received event {0} with subscription id {1} from relay {2}", new Object[]{jsonEvent, subId, relay});
+        log.log(Level.INFO, "Received event {0} with subscription id {1} from relay {2}", new Object[]{jsonEvent, subId, relay});
 
         var event = decodeEvent(jsonEvent);
-        log.log(Level.FINER, "App: Decoded event: {0}", event);
+        log.log(Level.INFO, "App: Decoded event: {0}", event);
         var recipient = Util.getEventRecipient(event);
         var sender = event.getPubKey();
         var app = Application.getInstance();
@@ -56,6 +61,8 @@ public class AppCommandHandler implements ICommandHandler {
             handleKind24133(event);
         } else if (event.getKind() == 4 && sender.equals(Signer.getInstance().getIdentity().getPublicKey())) {
             handleKind4(event, Signer.getInstance());
+        } else if (event.getKind() == 4 && !sender.equals(Signer.getInstance().getIdentity().getPublicKey())) {
+            log.log(Level.WARNING, "Ignoring event {0} with nip {1}. INVALID SIGNER {2}", new Object[]{event, event.getNip(), sender});
         } else {
             log.log(Level.FINE, "Skipping event {0} with nip {1}. All fine!", new Object[]{event, event.getNip()});
         }
@@ -109,12 +116,34 @@ public class AppCommandHandler implements ICommandHandler {
         if (jwtToken != null) {
             var jwt = JWT.decode(jwtToken);
             var app = jwt.getAudience().get(0);
+            log.log(Level.INFO, "Audience: {0}", app);
             if (Application.getInstance().getPublicKey().toString().equalsIgnoreCase(app)) {
                 log.log(Level.INFO, "A session already exists for {0}. Ignoring the login request...", app);
                 return;
             }
 
             AppService.getInstance(signer.getIdentity().getPublicKey()).setJwtToken(jwtToken);
+/*
+            try {
+                sendJwtToken(jwtToken, "localhost", 8080);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+*/
+        }
+    }
+
+    public void sendJwtToken(String jwtToken, String server, int port) throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        String url = "http://" + server + ":" + port + "/shibboleth/token?jwt=" + jwtToken;
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new IOException("Unexpected response code: " + response.statusCode());
         }
     }
 

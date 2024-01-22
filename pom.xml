@@ -11,6 +11,8 @@
     <modules>
         <module>shibboleth-lib</module>
         <module>shibboleth-web</module>
+        <module>shibboleth-servlet</module>
+        <module>shibboleth-api</module>
     </modules>
 
     <build>
@@ -89,6 +91,11 @@
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <tomcat7-maven-plugin.version>2.2</tomcat7-maven-plugin.version>
+
+        <TomcatServer>localhost</TomcatServer>
+        <TomcatServer.url>http://localhost:8080/manager/text</TomcatServer.url>
 
         <!-- Test Dependency Versions -->
         <junit.version>5.10.0</junit.version>

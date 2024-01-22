@@ -6,11 +6,13 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 import nostr.api.NIP01;
+import nostr.api.NIP04;
 import nostr.api.NIP46.NIP46Request;
 import nostr.api.Nostr;
 import nostr.base.PublicKey;
 import nostr.event.list.KindList;
 import nostr.event.list.PublicKeyList;
+import nostr.id.CustomIdentity;
 import nostr.si4n6r.core.IParameter;
 import nostr.si4n6r.core.impl.ApplicationProxy;
 import nostr.si4n6r.core.impl.Request;
@@ -29,15 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static nostr.api.NIP46.createRequestEvent;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_CONNECT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_DELEGATE;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_DESCRIBE;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_DISCONNECT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_GET_PUBLIC_KEY;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_GET_RELAYS;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_NIP04_DECRYPT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_NIP04_ENCRYPT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_SIGN_EVENT;
+import static nostr.si4n6r.core.IMethod.Constants.*;
 
 @Data
 @AllArgsConstructor
@@ -139,13 +133,13 @@ public class AppService {
 
         log.log(Level.INFO, "Describe...");
 
-        if(!sessionIdValid()) {
+        if (!sessionIdValid()) {
             return;
         }
 
-        var sessionId = getSessionId();
-        var request = new Request<>(new Describe(), toApplicationProxy(application));
-        request.setSessionId(sessionId);
+        var request = new Request<>(new Describe(), jwtToken);
+        request.setInitiator(toApplicationProxy(application));
+        request.setJwt(jwtToken);
         submit(request);
     }
 
@@ -157,10 +151,10 @@ public class AppService {
             return;
         }
 
-        var sessionId = getSessionId();
         var connect = new Connect(this.application.getPublicKey());
-        var request = new Request<>(connect, toApplicationProxy(application));
-        request.setSessionId(sessionId);
+        var request = new Request<>(connect, jwtToken);
+        request.setInitiator(toApplicationProxy(application));
+        request.setJwt(jwtToken);
         submit(request);
     }
 
@@ -183,9 +177,9 @@ public class AppService {
             return;
         }
 
-        var sessionId = getSessionId();
-        var request = new Request<>(new Disconnect(), toApplicationProxy(application));
-        request.setSessionId(sessionId);
+        var request = new Request<>(new Disconnect(this.application.getPublicKey()), jwtToken);
+        request.setInitiator(toApplicationProxy(application));
+        request.setJwt(jwtToken);
         submit(request);
     }
 
@@ -197,9 +191,8 @@ public class AppService {
             return;
         }
 
-        var sessionId = getSessionId();
-        var request = new Request<>(new GetPublicKey(), toApplicationProxy(application));
-        request.setSessionId(sessionId);
+        var request = new Request<>(new GetPublicKey(), jwtToken);
+        request.setJwt(jwtToken);
         submit(request);
     }
 
@@ -258,7 +251,7 @@ public class AppService {
 
         var params = getParams(request);
         var method = request.getMethod().getName();
-        var req = new NIP46Request(request.getId(), method, params, request.getSessionId());
+        var req = new NIP46Request(request.getId(), method, params, request.getJwt());
 
         // Create a request for the signer
         var event = createRequestEvent(req, application.getAppIdentity(), signer);
@@ -322,12 +315,12 @@ public class AppService {
         var sessionManager = SessionManager.getInstance();
         var session = sessionManager.getSession(new PublicKey(app));
 
-        if(!app.equalsIgnoreCase(application.getPublicKey().toString())) {
+        if (!app.equalsIgnoreCase(application.getPublicKey().toString())) {
             log.log(Level.WARNING, "App {0} does not match the app in the JWT token {1}", new Object[]{application.getPublicKey(), app});
             return false;
         }
 
-        if(session == null) {
+        if (session == null) {
             log.log(Level.WARNING, "No session found.");
             return false;
         }
