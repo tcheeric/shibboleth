@@ -22,7 +22,7 @@
         </dependency>
         <dependency>
             <groupId>nostr.si4n6r</groupId>
-            <artifactId>si4n6r-core</artifactId>
+            <artifactId>si4n6r-jpa</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

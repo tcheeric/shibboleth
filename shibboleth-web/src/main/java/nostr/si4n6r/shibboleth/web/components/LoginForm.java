@@ -3,17 +3,12 @@ package nostr.si4n6r.shibboleth.web.components;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.java.Log;
-import nostr.api.NIP04;
-import nostr.api.Nostr;
 import nostr.base.PublicKey;
-import nostr.base.Relay;
 import nostr.event.impl.DirectMessageEvent;
 import nostr.event.json.codec.BaseEventEncoder;
-import nostr.id.CustomIdentity;
 import nostr.si4n6r.ApplicationConfiguration;
 import nostr.si4n6r.CustomWebSession;
-import nostr.si4n6r.core.impl.SessionManager;
-import nostr.si4n6r.shibboleth.web.SendTokenPage;
+import nostr.si4n6r.rest.client.SessionManager;
 import nostr.si4n6r.util.EncryptionUtil;
 import org.apache.wicket.Session;
 import org.apache.wicket.markup.html.basic.Label;
@@ -21,7 +16,6 @@ import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.PasswordTextField;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.model.Model;
-import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.validation.validator.StringValidator;
 
 import java.io.BufferedReader;
@@ -72,7 +66,6 @@ public class LoginForm extends Form {
         usernameField.setRequired(true);
         passwordField.setRequired(true);
         appField.setRequired(true);
-
         appField.setVisible(false);
 
         usernameField.add(StringValidator.minimumLength(1));
@@ -91,21 +84,15 @@ public class LoginForm extends Form {
             return;
         }
 
-        log.log(Level.FINE, "Logging in with {0} and {1}...", new Object[]{username, password});
+        log.log(Level.INFO, "Logging in with {0} and {1}...", new Object[]{username, password});
         try {
-            EncryptionUtil.decryptNsec(publicKey, password);
+            EncryptionUtil.decryptNsec(username, publicKey, password);
             loginStatus.setDefaultModelObject("Logged in!");
             var jwtToken = createSession(publicKey, password, secret);
-
-            // Create PageParameters and add jwtToken
-            var pageParameters = new PageParameters();
-            pageParameters.add("jwt", jwtToken);
-            pageParameters.add("app", appField.getDefaultModelObject().toString());
-
-            // Redirect to SendTokenPage with the jwtToken parameter
-            setResponsePage(SendTokenPage.class, pageParameters);
+            log.log(Level.INFO, "Created session with JWT token: {0}", jwtToken);
         } catch (Exception e) {
             loginStatus.setDefaultModelObject("Wrong username/password combination!");
+            log.log(Level.SEVERE, "Error logging in", e);
         }
     }
 
@@ -114,15 +101,17 @@ public class LoginForm extends Form {
         log.log(Level.FINE, "Creating session...");
 
         // Create session
-        var app = new PublicKey(appField.getDefaultModelObject().toString());
+        //var app = new PublicKey((String) appField.getDefaultModelObject());
+        var app = getRequest().getQueryParameters().getParameterValue("app").toString();
+
         log.log(Level.INFO, "Creating a session for user: {0} on app: {1}", new Object[]{user, app});
-        sessionManager.createSession(user, app, TOKEN_EXPIRATION * 60, password, secret);
+        sessionManager.createSession(user.toString(), app.toString(), TOKEN_EXPIRATION * 60, password, secret);
 
         log.log(Level.INFO, "Adding user to web application session...");
         var session = (CustomWebSession) Session.get();
         log.log(Level.INFO, "Wicket Session: {0}", session);
-        log.log(Level.INFO, "Shibboleth Session: {0}", sessionManager.getSession(app));
-        var jwtToken = sessionManager.getSession(app).getJwtToken();
+        log.log(Level.INFO, "Shibboleth Session: {0}", sessionManager.getSession(app.toString()));
+        var jwtToken = sessionManager.getSession(app.toString()).getToken();
         log.log(Level.INFO, "JWT token: {0}", jwtToken);
         return jwtToken;
     }

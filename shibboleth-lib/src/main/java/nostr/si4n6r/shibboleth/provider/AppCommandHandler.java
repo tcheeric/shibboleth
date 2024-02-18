@@ -7,7 +7,9 @@ import nostr.api.NIP04;
 import nostr.api.NIP46;
 import nostr.base.Relay;
 import nostr.event.impl.GenericEvent;
-import nostr.si4n6r.core.impl.Response;
+import nostr.si4n6r.model.dto.MethodDto;
+import nostr.si4n6r.model.dto.ResponseDto;
+import nostr.si4n6r.model.dto.SessionDto;
 import nostr.si4n6r.shibboleth.AppService;
 import nostr.si4n6r.shibboleth.Application;
 import nostr.si4n6r.signer.Signer;
@@ -74,10 +76,33 @@ public class AppCommandHandler implements ICommandHandler {
         // TODO
     }
 
-    private static Response toResponse(@NonNull NIP46.NIP46Response nip46Response) {
-        Response response = new Response(nip46Response.getId(), nip46Response.getMethod(), nip46Response.getResult());
-        response.setError(nip46Response.getError());
+    private static ResponseDto toResponse(@NonNull NIP46.Response nip46Response) {
+        ResponseDto response = new ResponseDto();
+        response.setId(nip46Response.getId());
+        response.setMethod(toMethod(nip46Response.getMethod()));
+        response.setSession(toSession(nip46Response.getSession()));
+        response.setResponseUuid(nip46Response.getResponseUuid());
+        response.setResult(nip46Response.getResult());
+        response.setCreatedAt(nip46Response.getCreatedAt());
         return response;
+    }
+
+    private static SessionDto toSession(NIP46.Session session) {
+        SessionDto sessionDto = new SessionDto();
+        sessionDto.setId(session.getId());
+        sessionDto.setApp(session.getApp());
+        sessionDto.setAccount(session.getAccount());
+        sessionDto.setToken(session.getToken());
+        sessionDto.setCreatedAt(session.getCreatedAt());
+        return sessionDto;
+    }
+
+    private static MethodDto toMethod(NIP46.Method method) {
+        MethodDto methodDto = new MethodDto();
+        methodDto.setId(method.getId());
+        methodDto.setName(method.getName());
+        methodDto.setDescription(method.getDescription());
+        return methodDto;
     }
 
     private static void handleKind24133(GenericEvent event) {
@@ -93,7 +118,7 @@ public class AppCommandHandler implements ICommandHandler {
         log.log(Level.FINER, "Content: {0}", content);
 
         if (content != null) {
-            var nip46Response = NIP46.NIP46Response.fromString(content);
+            var nip46Response = NIP46.Response.fromString(content);
             var response = toResponse(nip46Response);
             var service = AppService.getInstance(app, event.getPubKey());
             service.handle(response);
@@ -123,13 +148,6 @@ public class AppCommandHandler implements ICommandHandler {
             }
 
             AppService.getInstance(signer.getIdentity().getPublicKey()).setJwtToken(jwtToken);
-/*
-            try {
-                sendJwtToken(jwtToken, "localhost", 8080);
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-*/
         }
     }
 

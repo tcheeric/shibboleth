@@ -85,7 +85,8 @@ public class SignUpForm extends Form {
             log.log(Level.INFO, "Relay: {0}", relay);
             relays.add(relay);
 
-            var nostrIdentity = identityClient.create(new NostrIdentityDto(username, "badgr.space", npub));
+            var dtoEntity = new NostrIdentityDto(username, "badgr.space", npub);
+            var nostrIdentity = identityClient.create(dtoEntity);
             log.log(Level.INFO, "- Nostr identity: {0}", nostrIdentity.get_links());
             nostrIdentity.setRelays(relays);
             nostrIdentity.setId(nostrIdentity.getIdFromLinks());
@@ -94,9 +95,11 @@ public class SignUpForm extends Form {
 
             var accountProxy = new AccountProxy(nsec, applicationProxy);
             accountProxy.setPublicKey(npub);
+            accountProxy.setId(username+"@badgr.space");
 
             log.log(Level.INFO, "Registering account: {0}", accountProxy);
-            var result = registerIdentity(npub, nsec, password, applicationProxy.getName(), applicationProxy.getPublicKey());
+            var name = dtoEntity.getLocalpart() + "@" + dtoEntity.getDomain();
+            var result = registerIdentity(npub, nsec, name, password, applicationProxy.getName(), applicationProxy.getPublicKey());
             log.log(Level.INFO, "Result: {0}", result);
             signUpStatus.setDefaultModelObject("Sign-up successful!");
 
@@ -106,11 +109,12 @@ public class SignUpForm extends Form {
         }
     }
 
-    private String registerIdentity(@NonNull String npub, @NonNull String nsec, @NonNull String password, @NonNull String appName, @NonNull String appPubKey) {
+    private String registerIdentity(@NonNull String npub, @NonNull String nsec, @NonNull String name, @NonNull String password, @NonNull String appName, @NonNull String appPubKey) {
         try {
             String urlWithParams = UriComponentsBuilder.fromHttpUrl(BOTTIN_SERVER_BASE_URL + "/identity")
                     .queryParam("npub", npub)
                     .queryParam("nsec", nsec)
+                    .queryParam("name", name)
                     .queryParam("password", password)
                     .queryParam("appName", appName)
                     .queryParam("appPubKey", appPubKey)

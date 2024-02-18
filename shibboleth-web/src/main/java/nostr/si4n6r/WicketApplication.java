@@ -1,6 +1,8 @@
 package nostr.si4n6r;
 
 import nostr.si4n6r.shibboleth.web.HomePage;
+import nostr.si4n6r.shibboleth.web.LoginPage;
+import nostr.si4n6r.shibboleth.web.SignUpPage;
 import org.apache.wicket.Session;
 import org.apache.wicket.csp.CSPDirective;
 import org.apache.wicket.csp.CSPDirectiveSrcValue;
@@ -44,6 +46,9 @@ public class WicketApplication extends WebApplication
 
 
 		// add your configuration here
+		mountPage("/login", LoginPage.class);
+		mountPage("/home", HomePage.class);
+		mountPage("/register", SignUpPage.class);
 	}
 	@Override
 	public Session newSession(Request request, Response response) {

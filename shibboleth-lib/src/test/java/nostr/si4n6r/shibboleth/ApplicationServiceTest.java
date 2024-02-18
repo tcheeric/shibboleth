@@ -1,26 +1,39 @@
 package nostr.si4n6r.shibboleth;
 
 import lombok.NonNull;
-import nostr.base.PublicKey;
+import lombok.extern.java.Log;
 import nostr.id.Identity;
-import nostr.si4n6r.core.impl.*;
+import nostr.si4n6r.model.dto.MethodDto;
+import nostr.si4n6r.model.dto.ParameterDto;
+import nostr.si4n6r.model.dto.RequestDto;
+import nostr.si4n6r.model.dto.SessionDto;
+import nostr.si4n6r.rest.client.MethodRestClient;
+import nostr.si4n6r.rest.client.ParameterRestClient;
+import nostr.si4n6r.rest.client.SessionManager;
+import nostr.si4n6r.rest.client.SessionRestClient;
 import nostr.si4n6r.signer.SignerService;
-import nostr.si4n6r.signer.methods.Connect;
-import nostr.si4n6r.signer.methods.Describe;
-import nostr.si4n6r.signer.methods.Disconnect;
 import nostr.si4n6r.storage.Vault;
+import nostr.si4n6r.storage.common.AccountProxy;
+import nostr.si4n6r.storage.common.ApplicationProxy;
 import nostr.si4n6r.storage.fs.NostrAccountFSVault;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.UUID;
+import java.util.logging.Level;
 
-import static nostr.si4n6r.core.IMethod.Constants.*;
 import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_ACCOUNT;
 import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_APPLICATION;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
+@Log
 public class ApplicationServiceTest {
 
     private SignerService signerService;
@@ -30,21 +43,32 @@ public class ApplicationServiceTest {
     private AccountProxy accountProxy;
     private ApplicationProxy applicationProxy;
 
+    private Application application;
+
     private static final String PASSWORD = "password";
 
-    private Session session;
+    private SessionDto session;
 
     @BeforeEach
     public void init() {
         System.out.println("init");
 
         this.signerService = SignerService.getInstance();
-        var application = Application.getInstance();
+        this.application = Application.getInstance(Identity.generateRandomIdentity());
+
+        var appPublicKey = application.getPublicKey();
         var signer = Identity.generateRandomIdentity().getPublicKey();
+
         this.appService = AppService.getInstance(application, signer);
-        final var appPublicKey = appService.getApplication().getPublicKey();
-        this.session = SessionManager.getInstance().createSession(Identity.generateRandomIdentity().getPublicKey(), appPublicKey, 20 * 60, PASSWORD, "secret");
-        this.appService.setJwtToken(session.getJwtToken());
+        this.session = SessionManager.getInstance().createSession(
+                Identity.generateRandomIdentity().getPublicKey().toString(),
+                appPublicKey.toString(),
+                20 * 60,
+                PASSWORD,
+                "secret"
+        );
+
+        this.appService.setJwtToken(session.getToken());
 
         createAppProxy();
         createAccountProxy(this.applicationProxy);
@@ -60,22 +84,20 @@ public class ApplicationServiceTest {
     public void handleConnect() {
         System.out.println("handleConnect");
 
-        var app = this.appService.getApplication().getPublicKey();
-        var request = new Request<>(new Connect(app), session.getJwtToken());
-        request.setInitiator(applicationProxy);
-        this.signerService.handle(request);
+        var app = this.application.getPublicKey();
+        var request = new RequestDto();
+        request.setSession(session);
+        request.setToken(session.getToken());
+        request.setInitiator(app.toString());
+        request.setMethod(getMethod(MethodDto.MethodType.CONNECT.getName()));
 
-        var responses = SessionManager.getInstance().getSession(app).getResponses();
-        var response = responses.stream().filter(r -> r.getMethod().equals(METHOD_CONNECT)).findFirst().orElse(null);
-        assertNotNull(response);
-        assertEquals("ACK", response.getResult());
+        var response = this.signerService.handle(request);
+        assertEquals(request.getRequestUuid(), response.getResponseUuid());
+
+        assertEquals("ACK", getResult(response.getResult()).getValue());
 
         this.appService.handle(response);
-        responses = this.signerService.getSessionManager().getSession(app).getResponses();
-        response = responses.stream().filter(r -> r.getMethod().equals(METHOD_CONNECT)).findFirst().orElse(null);
         assertNotNull(response);
-        assertEquals("ACK", response.getResult());
-        assertEquals(request.getId(), response.getId());
     }
 
     @Test
@@ -83,55 +105,65 @@ public class ApplicationServiceTest {
     public void handleDisconnect() {
         System.out.println("handleDisconnect");
 
-        var app = this.appService.getApplication().getPublicKey();
-        var request = new Request<>(new Connect(app), session.getJwtToken());
-        request.setInitiator(applicationProxy);
-        this.signerService.handle(request);
+        var app = this.application.getPublicKey();
 
-        var responses = SessionManager.getInstance().getSession(app).getResponses();
-        var response = responses.stream().filter(r -> r.getMethod().equals(METHOD_CONNECT)).findFirst().orElse(null);
+        var request = new RequestDto();
+        request.setSession(session);
+        request.setToken(session.getToken());
+        request.setInitiator(app.toString());
+        request.setMethod(getMethod(MethodDto.MethodType.CONNECT.getName()));
 
-        request = new Request<>(new Disconnect(new PublicKey(applicationProxy.getPublicKey())), session.getJwtToken());
-        request.setInitiator(applicationProxy);
-        this.signerService.handle(request);
-        response = responses.stream().filter(r -> r.getMethod().equals(METHOD_DISCONNECT)).findFirst().orElse(null);
+        var response = this.signerService.handle(request);
+        assertEquals(request.getRequestUuid(), response.getResponseUuid());
 
-        assertNotNull(response);
+        assertEquals("ACK", getResult(response.getResult()).getValue());
 
-        this.appService.handle(response);
-        assertEquals(request.getId(), response.getId());
-        assertEquals("ACK", response.getResult());
+        var request1 = new RequestDto();
+        request1.setSession(session);
+        request1.setToken(session.getToken());
+        request1.setInitiator(app.toString());
+        request1.setMethod(getMethod(MethodDto.MethodType.DISCONNECT.getName()));
+
+        var response1 = this.signerService.handle(request1);
+        assertEquals(request1.getRequestUuid(), response1.getResponseUuid());
+
+        assertEquals("ACK", getResult(response1.getResult()).getValue());
+        assertNotNull(response1);
+
+        this.appService.handle(response1);
     }
 
     @Test
     @DisplayName("Test a describe response")
     public void describe() {
         System.out.println("describe");
-        var app = this.appService.getApplication().getPublicKey();
+        var app = this.application.getPublicKey();
 
-        var connectReq = new Request<>(new Connect(app), session.getJwtToken());
-        connectReq.setInitiator(applicationProxy);
-        this.signerService.handle(connectReq);
+        var request = new RequestDto();
+        request.setSession(session);
+        request.setToken(session.getToken());
+        request.setInitiator(app.toString());
+        request.setMethod(getMethod(MethodDto.MethodType.CONNECT.getName()));
 
-        var responses = SessionManager.getInstance().getSession(app).getResponses();
-        var response = responses.stream().filter(r -> r.getMethod().equals(METHOD_CONNECT)).findFirst().orElse(null);
+        var response = this.signerService.handle(request);
 
-        var describeReq = new Request<>(new Describe(), session.getJwtToken());
-        describeReq.setInitiator(applicationProxy);
-        describeReq.setJwt(session.getJwtToken());
-        this.signerService.handle(describeReq);
+        assertEquals("ACK", getResult(response.getResult()).getValue());
+        assertEquals(request.getRequestUuid(), response.getResponseUuid());
 
-        response = responses.stream().filter(r -> r.getMethod().equals(METHOD_DESCRIBE)).findFirst().orElse(null);
+        request = new RequestDto();
+        request.setSession(session);
+        request.setToken(session.getToken());
+        request.setInitiator(app.toString());
+        request.setMethod(getMethod(MethodDto.MethodType.DESCRIBE.getName()));
+
+        response = this.signerService.handle(request);
+
         assertNotNull(response);
-        assertTrue(response.getResult() instanceof List);
-        assertEquals(describeReq.getId(), response.getId());
-        assertEquals(3, ((List) response.getResult()).size());
-        assertTrue(((List) response.getResult()).contains(METHOD_CONNECT));
-        assertTrue(((List) response.getResult()).contains(METHOD_DISCONNECT));
-        assertTrue(((List) response.getResult()).contains(METHOD_DESCRIBE));
+        assertEquals(request.getRequestUuid(), response.getResponseUuid());
+
+        assertEquals(3, getResult(response.getResult()).getValue().split(",").length);
 
         this.appService.handle(response);
-        assertNotNull(this.signerService.getSessionManager().getSession(app));
     }
 
     @Test
@@ -141,9 +173,9 @@ public class ApplicationServiceTest {
     }
 
     private void createAppProxy() {
-        var app = this.appService.getApplication().getPublicKey();
+        var app = this.application.getPublicKey();
         this.applicationProxy = new ApplicationProxy(app.toString());
-        this.applicationProxy.setId(System.currentTimeMillis());
+        this.applicationProxy.setId(String.valueOf(System.currentTimeMillis()));
         this.applicationProxy.setName("shibboleth");
 
         var template = applicationProxy.getTemplate();
@@ -157,7 +189,7 @@ public class ApplicationServiceTest {
         accountProxy = new AccountProxy();
         accountProxy.setPublicKey(identity.getPublicKey().toString());
         accountProxy.setPrivateKey(identity.getPrivateKey().toString());
-        accountProxy.setId(System.currentTimeMillis());
+        accountProxy.setId(String.valueOf(System.currentTimeMillis()));
         accountProxy.setApplication(application);
     }
 
@@ -181,14 +213,19 @@ public class ApplicationServiceTest {
                 .get();
     }
 
+    private MethodDto getMethod(@NonNull String name) {
+        MethodRestClient methodRestClient = new MethodRestClient();
+        return methodRestClient.getMethodByName(name);
+    }
+
+    private SignerService.Result getResult(@NonNull String resultJson) {
+        return SignerService.Result.fromJson(resultJson);
+    }
+
     @AfterEach
     public void cleanUp() {
         System.out.println("cleanUp");
-        this.signerService.getSessionManager().getSessions().stream().forEach(s -> s.getRequests().clear());
-        this.signerService.getSessionManager().getSessions().stream().forEach(s -> s.getResponses().clear());
-        this.signerService.getSessionManager().getSessions().clear();
-        this.appService.getRequests().clear();
-        this.appService.getResponses().clear();
+        this.application = null;
     }
 
 }
