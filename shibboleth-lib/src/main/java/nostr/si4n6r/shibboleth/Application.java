@@ -1,10 +1,9 @@
 package nostr.si4n6r.shibboleth;
 
 import lombok.Data;
+import lombok.NonNull;
 import nostr.base.PrivateKey;
 import nostr.base.PublicKey;
-import nostr.base.Relay;
-import nostr.client.Client;
 import nostr.id.IIdentity;
 import nostr.id.Identity;
 
@@ -16,20 +15,20 @@ public class Application {
 
     private PublicKey user;
     private final IIdentity appIdentity;
-    private final Relay relay;
+    //private final Relay relay;
     private final Map<String, Object> metadata;
 
     private static Application instance;
 
     private Application() {
         this.appIdentity = Identity.getInstance(PrivateKey.generateRandomPrivKey());
-        this.relay = Client.getInstance().getDefaultRelay();
+        //this.relay = Client.getInstance().getDefaultRelay();
         this.metadata = new HashMap<>();
     }
 
-    private Application(IIdentity identity) {
+    private Application(@NonNull IIdentity identity) {
         this.appIdentity = identity;
-        this.relay = Client.getInstance().getDefaultRelay();
+        //this.relay = Client.getInstance().getDefaultRelay();
         this.metadata = new HashMap<>();
     }
 
@@ -40,8 +39,8 @@ public class Application {
         return instance;
     }
 
-    public static Application getInstance(IIdentity identity) {
-        if (instance == null) {
+    public static Application getInstance(@NonNull IIdentity identity) {
+        if (instance == null || !instance.getAppIdentity().getPublicKey().equals(identity.getPublicKey())) {
             instance = new Application(identity);
         }
         return instance;
