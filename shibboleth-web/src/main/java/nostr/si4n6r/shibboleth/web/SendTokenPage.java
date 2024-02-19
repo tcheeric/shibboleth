@@ -32,19 +32,7 @@ public class SendTokenPage extends WebPage {
     private void callTokenEndpoint(@NonNull String jwt, @NonNull String app) {
         try {
             // Create a URL string that includes the jwt parameter
-            var urlString = "http://localhost:8080/shibboleth/token?jwt=" + jwt + "&app=" + app;
-
-            // Create a URL object from the URL string
-            var url = new URI(urlString).toURL();
-
-            // Open a connection to the URL
-            var conn = (HttpURLConnection) url.openConnection();
-
-            // Set the request method to GET
-            conn.setRequestMethod("GET");
-
-            // Get the response code
-            int responseCode = conn.getResponseCode();
+            int responseCode = getResponseCode(jwt, app);
 
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 log.log(Level.INFO, "Successfully called the token endpoint with jwt: " + jwt);
@@ -57,5 +45,22 @@ public class SendTokenPage extends WebPage {
             log.log(Level.SEVERE, "Error creating the URL object from the URL string: " + jwt, e);
             throw new RuntimeException(e);
         }
+    }
+
+    private static int getResponseCode(String jwt, String app) throws URISyntaxException, IOException {
+        var urlString = "http://localhost:8080/shibboleth/token?jwt=" + jwt + "&app=" + app; // TODO - Fix me
+
+        // Create a URL object from the URL string
+        var url = new URI(urlString).toURL();
+
+        // Open a connection to the URL
+        var conn = (HttpURLConnection) url.openConnection();
+
+        // Set the request method to GET
+        conn.setRequestMethod("GET");
+
+        // Get the response code
+        int responseCode = conn.getResponseCode();
+        return responseCode;
     }
 }

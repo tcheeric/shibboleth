@@ -16,13 +16,11 @@ import nostr.si4n6r.signer.SignerService;
 @Data
 public class API {
 
-    private final PublicKey signer;
     private final PublicKey app;
     private final String jwt;
     private final MethodRestClient methodRestClient;
 
     public API(PublicKey signer, PublicKey app, String jwt) {
-        this.signer = signer;
         this.app = app;
         this.jwt = jwt;
         this.methodRestClient = new MethodRestClient();

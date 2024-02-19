@@ -10,7 +10,6 @@ import nostr.si4n6r.bottin.model.dto.RelayDto;
 import nostr.si4n6r.rest.client.BottinRestClient;
 import nostr.si4n6r.storage.common.AccountProxy;
 import nostr.si4n6r.storage.common.ApplicationProxy;
-import nostr.si4n6r.storage.common.ApplicationProxy.ApplicationTemplate;
 import nostr.si4n6r.shibboleth.web.LoginPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;

@@ -9,7 +9,6 @@ import nostr.event.json.codec.BaseEventEncoder;
 import nostr.si4n6r.ApplicationConfiguration;
 import nostr.si4n6r.CustomWebSession;
 import nostr.si4n6r.rest.client.SessionManager;
-import nostr.si4n6r.shibboleth.api.API;
 import nostr.si4n6r.util.EncryptionUtil;
 import org.apache.wicket.Session;
 import org.apache.wicket.markup.html.basic.Label;
@@ -107,13 +106,13 @@ public class LoginForm extends Form {
 
         // Create session
         log.log(Level.INFO, "Creating a session for user: {0} on app: {1}", new Object[]{user, app});
-        sessionManager.createSession(user.toString(), app.toString(), TOKEN_EXPIRATION * 60, password, secret);
+        sessionManager.createSession(user.toString(), app, TOKEN_EXPIRATION * 60, password, secret);
 
         log.log(Level.INFO, "Adding user to web application session...");
         var session = (CustomWebSession) Session.get();
         log.log(Level.INFO, "Wicket Session: {0}", session);
-        log.log(Level.INFO, "Shibboleth Session: {0}", sessionManager.getSession(app.toString()));
-        var jwtToken = sessionManager.getSession(app.toString()).getToken();
+        log.log(Level.INFO, "Shibboleth Session: {0}", sessionManager.getSession(app));
+        var jwtToken = sessionManager.getSession(app).getToken();
         log.log(Level.INFO, "JWT token: {0}", jwtToken);
         return jwtToken;
     }
