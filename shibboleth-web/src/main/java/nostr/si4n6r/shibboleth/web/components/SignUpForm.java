@@ -7,9 +7,10 @@ import nostr.si4n6r.ApplicationConfiguration;
 import nostr.si4n6r.ApplicationTemplateConfiguration;
 import nostr.si4n6r.bottin.model.dto.NostrIdentityDto;
 import nostr.si4n6r.bottin.model.dto.RelayDto;
-import nostr.si4n6r.core.impl.AccountProxy;
-import nostr.si4n6r.core.impl.ApplicationProxy;
 import nostr.si4n6r.rest.client.BottinRestClient;
+import nostr.si4n6r.storage.common.AccountProxy;
+import nostr.si4n6r.storage.common.ApplicationProxy;
+import nostr.si4n6r.storage.common.ApplicationProxy.ApplicationTemplate;
 import nostr.si4n6r.shibboleth.web.LoginPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
@@ -61,7 +62,7 @@ public class SignUpForm extends Form {
 
         try {
             var app = getApp();
-            var template = ApplicationTemplateConfiguration.getInstance().getTemplate();
+            ApplicationProxy.ApplicationTemplate template = ApplicationTemplateConfiguration.getInstance().getTemplate();
             var applicationProxy = new ApplicationProxy(app, template);
             var appConfig = ApplicationConfiguration.getInstance();
             applicationProxy.setPublicKey(appConfig.getAppNpub());
@@ -70,7 +71,7 @@ public class SignUpForm extends Form {
             var username = URLEncoder.encode((String) this.username.getModelObject(), StandardCharsets.UTF_8);
             var password = URLEncoder.encode(passwordField.getModelObject(), StandardCharsets.UTF_8);
 
-            log.log(Level.INFO, "Creating the nip05 identity...");
+            log.log(Level.INFO, "Creating the nip05     identity...");
             var identity = Identity.generateRandomIdentity();
             var npub = identity.getPublicKey().toString();
             var nsec = identity.getPrivateKey().toString();

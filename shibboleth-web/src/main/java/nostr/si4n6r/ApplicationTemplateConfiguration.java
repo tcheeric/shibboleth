@@ -1,14 +1,15 @@
 package nostr.si4n6r;
 
 import lombok.Data;
-import nostr.si4n6r.core.impl.ApplicationProxy;
+import nostr.si4n6r.storage.common.ApplicationProxy;
+import nostr.si4n6r.storage.common.ApplicationProxy.ApplicationTemplate;
 
 import java.io.IOException;
 import java.io.InputStream;
 
 @Data
 public class ApplicationTemplateConfiguration {
-    private ApplicationProxy.ApplicationTemplate template;
+    private ApplicationTemplate template;
     private static ApplicationTemplateConfiguration instance;
 
     private ApplicationTemplateConfiguration() {

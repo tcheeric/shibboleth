@@ -9,6 +9,7 @@ import nostr.event.json.codec.BaseEventEncoder;
 import nostr.si4n6r.ApplicationConfiguration;
 import nostr.si4n6r.CustomWebSession;
 import nostr.si4n6r.rest.client.SessionManager;
+import nostr.si4n6r.shibboleth.api.API;
 import nostr.si4n6r.util.EncryptionUtil;
 import org.apache.wicket.Session;
 import org.apache.wicket.markup.html.basic.Label;
@@ -88,7 +89,11 @@ public class LoginForm extends Form {
         try {
             EncryptionUtil.decryptNsec(username, publicKey, password);
             loginStatus.setDefaultModelObject("Logged in!");
-            var jwtToken = createSession(publicKey, password, secret);
+
+            var app = getRequest().getQueryParameters().getParameterValue("app").toString();
+            log.log(Level.INFO, "App parameter: {0}", app);
+
+            var jwtToken = createSession(publicKey, password, secret, app);
             log.log(Level.INFO, "Created session with JWT token: {0}", jwtToken);
         } catch (Exception e) {
             loginStatus.setDefaultModelObject("Wrong username/password combination!");
@@ -96,14 +101,11 @@ public class LoginForm extends Form {
         }
     }
 
-    private String createSession(@NonNull PublicKey user, @NonNull String password, @NonNull String secret) {
+    private String createSession(@NonNull PublicKey user, @NonNull String password, @NonNull String secret, @NonNull String app) {
         var sessionManager = SessionManager.getInstance();
         log.log(Level.FINE, "Creating session...");
 
         // Create session
-        //var app = new PublicKey((String) appField.getDefaultModelObject());
-        var app = getRequest().getQueryParameters().getParameterValue("app").toString();
-
         log.log(Level.INFO, "Creating a session for user: {0} on app: {1}", new Object[]{user, app});
         sessionManager.createSession(user.toString(), app.toString(), TOKEN_EXPIRATION * 60, password, secret);
 
