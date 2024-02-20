@@ -1,4 +1,5 @@
 # shibboleth
-Nostr library for a NIP-46 compliant App
+Nostr library for NIP-46 compliant Apps
 
-See [si4n6r](https://github.com/tcheeric/si4n6r/blob/1.0-SNAPSHOT/README.md) for more information.
+Shibboleth is a library for NIP-46 compliant Apps. 
+It provides a simple API implementing all the methods defined in the NIP-46 specification (connect, describe, sign_event, etc).
