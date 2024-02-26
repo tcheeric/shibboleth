@@ -77,7 +77,7 @@ public class AppCommandHandler implements ICommandHandler {
     }
 
     private static ResponseDto toResponse(@NonNull NIP46.Response nip46Response) {
-        ResponseDto response = new ResponseDto();
+        var response = new ResponseDto();
         response.setId(nip46Response.getId());
         response.setMethod(toMethod(nip46Response.getMethod()));
         response.setSession(toSession(nip46Response.getSession()));
@@ -88,7 +88,7 @@ public class AppCommandHandler implements ICommandHandler {
     }
 
     private static SessionDto toSession(NIP46.Session session) {
-        SessionDto sessionDto = new SessionDto();
+        var sessionDto = new SessionDto();
         sessionDto.setId(session.getId());
         sessionDto.setApp(session.getApp());
         sessionDto.setAccount(session.getAccount());
@@ -98,7 +98,7 @@ public class AppCommandHandler implements ICommandHandler {
     }
 
     private static MethodDto toMethod(NIP46.Method method) {
-        MethodDto methodDto = new MethodDto();
+        var methodDto = new MethodDto();
         methodDto.setId(method.getId());
         methodDto.setName(method.getName());
         methodDto.setDescription(method.getDescription());

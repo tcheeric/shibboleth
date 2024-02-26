@@ -251,7 +251,7 @@ public class AppService {
     }
 
     private NIP46.Method toNIP46Method(MethodDto method) {
-        NIP46.Method nip46Method = new NIP46.Method();
+        var nip46Method = new NIP46.Method();
         nip46Method.setId(method.getId());
         nip46Method.setDescription(method.getDescription());
         nip46Method.setName(method.getName());
@@ -259,7 +259,7 @@ public class AppService {
     }
 
     private NIP46.Response toNIP46Response(ResponseDto response) {
-        NIP46.Response nip46Response = new NIP46.Response();
+        var nip46Response = new NIP46.Response();
         nip46Response.setMethod(toNIP46Method(response.getMethod()));
         nip46Response.setSession(toNIP46Session(response.getSession()));
         nip46Response.setResponseUuid(response.getResponseUuid());
@@ -268,7 +268,7 @@ public class AppService {
     }
 
     private NIP46.Request toNIP46Request(RequestDto request) {
-        NIP46.Request nip46Request = new NIP46.Request();
+        var nip46Request = new NIP46.Request();
         nip46Request.setMethod(toNIP46Method(request.getMethod()));
         nip46Request.setSession(toNIP46Session(request.getSession()));
         nip46Request.setRequestUuid(request.getRequestUuid());
@@ -285,7 +285,7 @@ public class AppService {
     }
 
     private NIP46.Parameter toNIP46Parameter(ParameterDto p) {
-        NIP46.Parameter param = new NIP46.Parameter();
+        var param = new NIP46.Parameter();
         param.setId(p.getId());
         param.setName(p.getName());
         param.setValue(p.getValue());
