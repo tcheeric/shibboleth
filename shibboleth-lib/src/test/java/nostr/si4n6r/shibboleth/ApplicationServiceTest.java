@@ -64,9 +64,7 @@ public class ApplicationServiceTest {
                 Identity.generateRandomIdentity().getPublicKey().toString(),
                 appPublicKey.toString(),
                 20 * 60,
-                PASSWORD,
-                "secret"
-        );
+                PASSWORD);
 
         this.appService.setJwtToken(session.getToken());
 

@@ -18,7 +18,12 @@
         <dependency>
             <groupId>nostr.si4n6r</groupId>
             <artifactId>si4n6r-storage-fs</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>nostr.si4n6r</groupId>
+            <artifactId>si4n6r-util</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

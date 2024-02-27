@@ -75,7 +75,6 @@ public class LoginForm extends Form {
     public final void onSubmit() {
         String username = (String) usernameField.getDefaultModelObject();
         String password = (String) passwordField.getDefaultModelObject();
-        String secret = getTokenPassword();
 
         var publicKey = getPublicKey(username);
 
@@ -92,7 +91,7 @@ public class LoginForm extends Form {
             var app = getRequest().getQueryParameters().getParameterValue("app").toString();
             log.log(Level.INFO, "App parameter: {0}", app);
 
-            var jwtToken = createSession(publicKey, password, secret, app);
+            var jwtToken = createSession(publicKey, password, app);
             log.log(Level.INFO, "Created session with JWT token: {0}", jwtToken);
         } catch (Exception e) {
             loginStatus.setDefaultModelObject("Wrong username/password combination!");
@@ -100,13 +99,13 @@ public class LoginForm extends Form {
         }
     }
 
-    private String createSession(@NonNull PublicKey user, @NonNull String password, @NonNull String secret, @NonNull String app) {
+    private String createSession(@NonNull PublicKey user, @NonNull String password, @NonNull String app) {
         var sessionManager = SessionManager.getInstance();
         log.log(Level.FINE, "Creating session...");
 
         // Create session
         log.log(Level.INFO, "Creating a session for user: {0} on app: {1}", new Object[]{user, app});
-        sessionManager.createSession(user.toString(), app, TOKEN_EXPIRATION * 60, password, secret);
+        sessionManager.createSession(user.toString(), app, TOKEN_EXPIRATION * 60, password);
 
         log.log(Level.INFO, "Adding user to web application session...");
         var session = (CustomWebSession) Session.get();
@@ -199,15 +198,6 @@ public class LoginForm extends Form {
         String publicKeyString = namesObject.get(localpart);
 
         return new PublicKey(publicKeyString);
-    }
-
-    private String getTokenPassword() {
-        var filePath = System.getProperty("user.home") + "/.si4n6r/" + TOKEN_ALGO_SECRET;
-        try {
-            return readFileContent(filePath);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private String readFileContent(@NonNull String filePath) throws IOException {

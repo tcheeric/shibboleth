@@ -1,6 +1,5 @@
 package nostr.si4n6r.shibboleth.api;
 
-import com.auth0.jwt.JWT;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
@@ -21,6 +20,7 @@ import nostr.si4n6r.signer.SignerService;
 import nostr.si4n6r.storage.Vault;
 import nostr.si4n6r.storage.common.AccountProxy;
 import nostr.si4n6r.storage.fs.NostrAccountFSVault;
+import nostr.si4n6r.util.JWTUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -56,6 +56,10 @@ public class API {
 
     public String sign(@NonNull byte[] data) {
         return processRequest(MethodDto.MethodType.SIGN_EVENT.getName(), data);
+    }
+
+    public String get_public_key() {
+        return processRequest(MethodDto.MethodType.GET_PUBLIC_KEY.getName());
     }
 
     private String processRequest(@NonNull String methodName) {
@@ -97,8 +101,9 @@ public class API {
 
         var strEvent = new String(data, StandardCharsets.UTF_8);
         var event = new GenericEventDecoder(strEvent).decode();
-        var account = JWT.decode(this.jwt).getSubject();
-        var password = JWT.decode(this.jwt).getClaim("password").asString();
+        var jwtUtil = new JWTUtil(this.jwt);
+        var account = jwtUtil.getSubject();
+        var password = jwtUtil.getPassword();
 
         log.log(Level.INFO, "Account {0} - Password: {1}", new Object[]{account, password});
 
